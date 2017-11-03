@@ -30,8 +30,8 @@ HopfieldNetGPU<nodeW, edgeW>::HopfieldNetGPU( const Graph<nodeW, edgeW> * const 
 			this->hState.score = new float[this->hState.size];
 
 			hState_d.size = this->hState.size;
-			cuSts = cudaMalloc( (void**)&(hState_d.state), hState_d.size * sizeof( unitVal ) ); cudaCheck( cuSts );
-			cuSts = cudaMalloc( (void**)&(hState_d.score), hState_d.size * sizeof( unitVal ) ); cudaCheck( cuSts );
+			cuSts = cudaMalloc( (void**)&(hState_d.state), hState_d.size * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
+			cuSts = cudaMalloc( (void**)&(hState_d.score), hState_d.size * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
 			numThreads = 32;
 			threadsPerBlock = dim3( numThreads, 1, 1 );
@@ -41,8 +41,8 @@ HopfieldNetGPU<nodeW, edgeW>::HopfieldNetGPU( const Graph<nodeW, edgeW> * const 
 template<typename nodeW, typename edgeW>
 HopfieldNetGPU<nodeW, edgeW>::~HopfieldNetGPU() {
 	cudaError_t cuSts;
-	cuSts = cudaFree( hState_d.score ); cudaCheck( cuSts );
-	cuSts = cudaFree( hState_d.state ); cudaCheck( cuSts );
+	cuSts = cudaFree( hState_d.score ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaFree( hState_d.state ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	delete[] this->hState.score;
 	delete[] this->hState.state;
 }
@@ -54,9 +54,9 @@ HopfieldNetGPU<nodeW, edgeW>::~HopfieldNetGPU() {
 template<typename nodeW, typename edgeW>
 void HopfieldNetGPU<nodeW, edgeW>::run_nodewise() {
 	cudaError_t cuSts;
-	#ifdef PRINTHOPFIELDTITLE
+#ifdef PRINTHOPFIELDTITLE
 	std::cout << "\033[32;1m** Hopfiled Net GPU alternative runner **\033[0m" << std::endl;
-	#endif
+#endif
 	cudaEvent_t start, stop;
 	cudaEventCreate(&start);
 	cudaEventCreate(&stop);
@@ -64,40 +64,40 @@ void HopfieldNetGPU<nodeW, edgeW>::run_nodewise() {
 	this->numIter = 0;
 	bool modified = true;
 	bool *modified_d;
-	cuSts = cudaMalloc( (void**) &modified_d, sizeof(bool) ); cudaCheck2(cuSts,__FILE__,__LINE__);
+	cuSts = cudaMalloc( (void**) &modified_d, sizeof(bool) ); cudaCheck(cuSts,__FILE__,__LINE__);
 
 // vedi commenti di HopfieldNetGPU::run()
 // ah, gia'... non ci sono commenti in HopfieldNetGPU::run()
 	std::unique_ptr<uint32_t[]> ISsize_h( new uint32_t[col_d->nCol + 1] );
-	cuSts = cudaMemcpy( ISsize_h.get(), col_d->cumulSize, (col_d->nCol + 1) * sizeof( uint32_t ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts );
+	cuSts = cudaMemcpy( ISsize_h.get(), col_d->cumulSize, (col_d->nCol + 1) * sizeof( uint32_t ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
-	#ifdef VERBOSEHOPFIELD
+#ifdef VERBOSEHOPFIELD
 	printf( "Numero colori: %d\n", col->nCol );
 	for ( int i = 0; i < col->nCol; i++)
 		printf( "colore %d: %d\n", i, ISsize_h[i] );
-	#endif
+#endif
 
 	cudaEventRecord( start );
 	while (modified) {
 		this->numIter++;
-		cuSts = cudaMemset( modified_d, false, sizeof(bool) ); cudaCheck( cuSts );
+		cuSts = cudaMemset( modified_d, false, sizeof(bool) ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
 		for (int ISidx = 0; ISidx < col_d->nCol; ISidx++) {
-			//int numberOfNodes = ISsize_h[ISidx];
+
 			int numberOfNodes = ISsize_h[ISidx + 1] - ISsize_h[ISidx];
 
 			blocksPerGrid = dim3( (numberOfNodes + threadsPerBlock.x - 1) / threadsPerBlock.x, 1, 1 );
 
 			// launch the Hopfield kernel
-			HopfieldNetGPU_k::updateIS_nodewise<nodeW, edgeW> << <blocksPerGrid, threadsPerBlock/*, numberOfNodes * sizeof( float )*/ >> >(
-					hState_d.state,			// net state
-					hState_d.score,			// net score
-					graph_d->getStruct(),	// graph structure (neighs, weighs, thresholds)
-					//graph_d->getStruct()->cumulDegs, graph_d->getStruct()->edgeWeights, graph_d->getStruct()->neighs, graph_d->getStruct()->nodeThresholds,
-					//graph_d->getStruct()->nNodes,
+			HopfieldNetGPU_k::updateIS_nodewise<nodeW, edgeW> <<<blocksPerGrid, threadsPerBlock >>> (
+					hState_d.state,
+					hState_d.score,
+					//graph_d->getStruct(),
+					graph_d->getStruct()->cumulDegs, graph_d->getStruct()->edgeWeights, graph_d->getStruct()->neighs, graph_d->getStruct()->nodeThresholds,
+					graph_d->getStruct()->nNodes,
 					col_d->nCol, col_d-> colClass, col_d->cumulSize,
-					ISidx,					// indipendent set/color index
-					modified_d,				// stop cond
+					ISidx,
+					modified_d,
 					this->posState,
 					this->negState,
 					this->regulWeight
@@ -109,161 +109,62 @@ void HopfieldNetGPU<nodeW, edgeW>::run_nodewise() {
 				std::cout << "HopfieldNetGPUCompr_k::updateIS_altern, iterazione n: " << this->numIter << std::endl;
 				std::cout << "errore: " << cudaGetErrorString( cuSts ) << std::endl;
 				abort();
-			}// DEBUG
+			}
 		}
 
-		cuSts = cudaMemcpy(&modified, modified_d, sizeof(bool), cudaMemcpyDeviceToHost); cudaCheck( cuSts );
+		cuSts = cudaMemcpy(&modified, modified_d, sizeof(bool), cudaMemcpyDeviceToHost); cudaCheck( cuSts, __FILE__, __LINE__ );
 		if (this->numIter > 5000) {
 			std::cout << "Massimo numero di iterazioni raggiunto!!! Uscita forzata" << std::endl;
 			break;
 		}
 	}
 
-	cuSts = cudaEventRecord(stop); cudaCheck( cuSts );
-	cuSts = cudaEventSynchronize(stop); cudaCheck( cuSts );
+	cuSts = cudaEventRecord(stop); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaEventSynchronize(stop); cudaCheck( cuSts, __FILE__, __LINE__ );
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
-	#ifdef VERBOSEHOPFIELD
+#ifdef VERBOSEHOPFIELD
 	std::cout << "Stabilita' raggiunta in " << numIter << " iterazioni" << std::endl;
-	#endif
+#endif
 
 	// final state & log
-	cuSts = cudaMemcpy( this->hState.state, this->hState_d.state, this->hState.size * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts );
+	cuSts = cudaMemcpy( this->hState.state, this->hState_d.state, this->hState.size * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	//HL->GPUrunTime = milliseconds / 1000;
 	//HL->GPUnumIter = num_iter;
 	//HL->speedup = HL->runTime / HL->GPUrunTime;
-	cuSts = cudaFree(modified_d); cudaCheck( cuSts );
+	cuSts = cudaFree(modified_d); cudaCheck( cuSts, __FILE__, __LINE__ );
 }
-
-
-/*
-template<typename nodeW, typename edgeW>
-void HopfieldNetGPU<nodeW, edgeW>::run_nodewise() {
-	cudaError_t cuSts;
-
-#ifdef PRINTHOPFIELDTITLE
-	std::cout << "\033[32;1m** Hopfiled Net GPU alternative runner **\033[0m" << std::endl;
-#endif
-
-	//timer cudaEvent per Benchmark
-	cudaEvent_t start, stop;
-	cudaEventCreate(&start);
-	cudaEventCreate(&stop);
-
-	//conto iterazioni e criterio di arresto
-	this->numIter = 0;
-	bool modified = true;
-	bool *modified_d;
-	cuSts = cudaMalloc( (void**) &modified_d, sizeof(bool) ); cudaCheck( cuSts );
-	cuSts = cudaMemset( modified_d, true, sizeof( bool ) ); cudaCheck( cuSts ); //forse non serve ma andiamo sul sicuro
-
-	//alloco e copio cumulSize
-	std::unique_ptr<uint32_t[]> cumulSize_h( new uint32_t[ (col_d->nCol+1) ] );
-	cuSts = cudaMemcpy( cumulSize_h.get(), col_d->cumulSize, (col_d->nCol+1) * sizeof( uint32_t ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts );
-
-#ifdef VERBOSEHOPFIELD
-	printf( "Numero colori: %d\n", col_d->nCol );
-	for ( int i = 0; i < col_d->nCol; i++)
-		printf( "colore %d: %d\n", i, cumulSize_h[i] );
-#endif
-
-	cudaEventRecord( start );
-
-	//ciclo finchè non si è stabilizzato numItert=ITERATION_LIMIT
-	while (modified) {
-		(this->numIter)++;
-		cuSts = cudaMemset( modified_d, false, sizeof(bool) ); cudaCheck( cuSts );
-
-		//ciclo sui colori
-		for (uint32_t ISidx = 0; ISidx < col_d->nCol; ISidx++) {
-			uint32_t numberOfNodes = cumulSize_h[ISidx + 1] - cumulSize_h[ISidx];
-
-			blocksPerGrid = dim3( (numberOfNodes + threadsPerBlock.x - 1) / threadsPerBlock.x, 1, 1 );
-
-			// launch the Hopfield kernel
-			HopfieldNetGPU_k::updateIS_nodewise<<<blocksPerGrid, threadsPerBlock, numberOfNodes * sizeof(float)>>>(
-					hState_d.state,			// net state
-					hState_d.score,			// net score
-					graph_d->getStruct(),	// graph structure (neighs, weighs, thresholds)
-					col_d,					// graph coloring
-					ISidx,					// indipendent set/color index
-					modified_d,				// stop cond
-					this->posState,
-					this->negState
-					);
-
-			cudaDeviceSynchronize();
-			if (cudaGetLastError() != cudaSuccess) { std::cout << "HopfieldNetGPU_k::updateIS_nodewise, iterazione n: " << this->numIter << std::endl; abort(); }// DEBUG
-		}
-
-		cuSts = cudaMemcpy(&modified, modified_d, sizeof(bool), cudaMemcpyDeviceToHost); cudaCheck( cuSts );
-		if (this->numIter > ITERATION_LIMIT) {
-			std::cout << "Massimo numero di iterazioni raggiunto!!! Uscita forzata" << std::endl;
-			break;
-		}
-	}
-
-	cuSts = cudaEventRecord(stop); cudaCheck( cuSts );
-	cuSts = cudaEventSynchronize(stop); cudaCheck( cuSts );
-	float milliseconds = 0;
-	cudaEventElapsedTime(&milliseconds, start, stop);
-#ifdef VERBOSEHOPFIELD
-	std::cout << "Stabilita' raggiunta in " << numIter << " iterazioni" << std::endl;
-#endif
-
-	// final state & log
-	cuSts = cudaMemcpy( this->hState.state, hState_d.state, this->hState.size * sizeof( int ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts );
-	//HL->GPUrunTime = milliseconds / 1000;
-	//HL->GPUnumIter = num_iter;
-	//HL->speedup = HL->runTime / HL->GPUrunTime;
-	cuSts = cudaFree(modified_d); cudaCheck( cuSts );
-}*/
 
 template<typename nodeW, typename edgeW>
 __global__ void HopfieldNetGPU_k::updateIS_nodewise
-			( float * const state, float * const score,				// Out values
-			const GraphStruct<nodeW, edgeW> * const graphStruct_d,
-			//uint32_t * cumulDegs, float * edgeWeights, uint32_t * neighs_, float * nodeThresholds,
-			//const node_sz nNodes,
+			( float * const state, float * const score,
+			//const GraphStruct<nodeW, edgeW> * const graphStruct_d,
+			node_sz * cumulDegs, edgeW * edgeWeights, node * neighs_, nodeW * nodeThresholds,
+			const node_sz nNodes,
 			const uint32_t nCol, const uint32_t	* const colClass, const uint32_t * const cumulSize,
-			const int colorIdx,											// coloring stuff
-			bool * const modified_d,																	// stop condition
-			const float posState, const float negState, const float regulWeight ) {											// float const
+			const int colorIdx,
+			bool * const modified_d,
+			const float posState, const float negState, const float regulWeight ) {
 
 	unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
 
 	if (tid >= (cumulSize[colorIdx + 1] - cumulSize[colorIdx]))
 		return;
 
-	/*extern __shared__ float smem[];
-	smem[tid] = 0;
-*/
 	float newScore = 0;
 
-	/*if (tid == 0) {
-		printf( "node: %d\n", col_d->colClass[colorIdx + tid] );
-		const int 			node = col_d->colClass[colorIdx + tid];
-		printf( "offset: %d\n", graphStruct_d->cumulDegs[node] );
-		const int			offset = graphStruct_d->cumulDegs[node];
-		printf( "degree: %d\n", graphStruct_d->cumulDegs[node + 1] - offset);
-		printf( "weights_ptr %p\n", &(graphStruct_d->edgeWeights[node]) );
-		printf( "neighs_ptr %p\n", &(graphStruct_d->neighs[node]) );
-		printf( "oldState: %f\n", state[node] );
-		printf( "threshold: %f\n", graphStruct_d->nodeThresholds[node] );
-	}*/
-
 	//const int			colOffset = /*col_d->*/cumulSize[colorIdx];
-	const int 			node   = /*col_d->*/colClass[colorIdx + tid];
-	const int			offset = graphStruct_d->cumulDegs[node];
-	const int 			degree = graphStruct_d->cumulDegs[node + 1] - offset;
-	const edgeW * const weights = &(graphStruct_d->edgeWeights[offset]);
-	const uint32_t	* const neighs  = &(graphStruct_d->neighs[offset]);
+	const int 			node   = colClass[colorIdx + tid];
+	const int			offset = cumulDegs[node];
+	const int 			degree = cumulDegs[node + 1] - offset;
+	const edgeW * const weights = &(edgeWeights[offset]);
+	const uint32_t	* const neighs  = &(neighs_[offset]);
 	unitVal oldState = state[node];
 
 	for (int i = 0; i < degree; i++) {
 		newScore += (weights[i] - regulWeight) * state[neighs[i]];
 	}
-	__syncthreads();	// Forse inutile, ma con la shared mem meglio andarci cauti!
+	__syncthreads(); // Non dovrebbe servire
 
 	// modifica per regolarizzazione
 	// int nodoreg;
@@ -280,71 +181,13 @@ __global__ void HopfieldNetGPU_k::updateIS_nodewise
 	// }
 	// __syncthreads();
 
-	score[node] = newScore - graphStruct_d->nodeThresholds[node];
-	state[node] = SIGNTH( (newScore - graphStruct_d->nodeThresholds[node]) );
+	score[node] = newScore - nodeThresholds[node];
+	state[node] = SIGNTH( (newScore - nodeThresholds[node]) );
 
 	if (state[node] != oldState) {
 		*modified_d = true;
 	}
 }
-
-/*
-template<typename nodeW, typename edgeW>
-__global__ void HopfieldNetGPU_k::updateIS_nodewise( float * const state, float * const score,				// Out values
-		const GraphStruct<nodeW, edgeW> * const graphStruct_d,									// graph stuff
-		const Coloring * const col_d, const int colorIdx,											// coloring stuff
-		bool * const modified_d,																	// stop condition
-		const float posState, const float negState ) {												// float const
-
-	unsigned int tid = blockDim.x * blockIdx.x + threadIdx.x;
-
-	// thread idx supera numero nodi?
-	if (tid >= graphStruct_d->nNodes)
-		return;
-
-	// color idx supera numero colori?
-	if (colorIdx >= col_d->nCol)
-		return;
-
-	const int 		offsetCol = col_d->cumulSize[colorIdx];						// offset per il coloring
-	//const int 		colSize = col_d->cumulSize[colorIdx + 1] - offsetCol;		// dim del colore attuale
-
-	// ricorda la struttura di colClass e cumulSize nella classe coloring
-	// il kernel non deve prendere nodi nodeIdx al di fuori del colore attuale
-	if( (offsetCol + tid) >= col_d->cumulSize[colorIdx + 1] )
-		return;
-
-	// NOTA per la natura di update_to_standard_notation in ColoringLuby,
-	// i nodi di ogni colore sono in ordine crescente di indice
-	const int 		nodeIdx = col_d->colClass[offsetCol + tid];					// indice del nodo in cui lavoreremo
-
-	// non alloco prima dei 3 controlli (?)
-	extern __shared__ float smem[];
-	smem[tid] = 0;
-
-	const int 		offsetDeg	= graphStruct_d->cumulDegs[nodeIdx];		// offset per neighs di nodeIdx
-	const int 		degree = graphStruct_d->cumulDegs[nodeIdx+1] - offsetDeg;	// per il ciclo
-	unitVal oldState = state[nodeIdx];
-	int neighIdx;
-
-	for (int i = 0; i < degree; i++) {
-		neighIdx = graphStruct_d->neighs[offsetDeg + i];
-		//smem[tid] += (graphStruct_d->nodeWeights[neighIdx] - regulWeight) * state[neighIdx];
-		smem[tid] += graphStruct_d->edgeWeights[offsetDeg + i] * state[neighIdx];
-	}
-
-	__syncthreads();	// Forse inutile, ma con la shared mem meglio andarci cauti!
-
-	// aggiorno state e score
-	score[nodeIdx] = smem[tid] - graphStruct_d->nodeThresholds[nodeIdx];
-	state[nodeIdx] = SIGNTH((smem[tid] - graphStruct_d->nodeThresholds[nodeIdx]));
-
-	//controllo se lo stato è stato modificato
-	if (state[nodeIdx] != oldState) {
-		*modified_d = true;
-	}
-}
-*/
 
 
 ////////////////////////////////////////
@@ -374,12 +217,12 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 	this->numIter = 0;
 	bool modified = true;
 	bool *modified_d;
-	cuSts = cudaMalloc( (void**) &modified_d, sizeof(bool) ); cudaCheck( cuSts );
-	cuSts = cudaMemset( modified_d, true, sizeof( bool ) ); cudaCheck( cuSts ); //forse non serve ma andiamo sul sicuro
+	cuSts = cudaMalloc( (void**) &modified_d, sizeof(bool) ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemset( modified_d, true, sizeof( bool ) ); cudaCheck( cuSts, __FILE__, __LINE__ ); //forse non serve ma andiamo sul sicuro
 
 	//alloco e copio cumulSize
 	std::unique_ptr<uint32_t[]> cumulSize_h( new uint32_t[ (col_d->nCol+1) ] );
-	cuSts = cudaMemcpy( cumulSize_h.get(), col_d->cumulSize, (col_d->nCol+1) * sizeof( uint32_t ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts );
+	cuSts = cudaMemcpy( cumulSize_h.get(), col_d->cumulSize, (col_d->nCol+1) * sizeof( uint32_t ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
 #ifdef VERBOSEHOPFIELD
 	printf( "Numero colori: %d\n", col->nCol );
@@ -390,10 +233,9 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 	// **  run net on device: loop on ISs  **
 	CHECK( cudaEventRecord( start ) );
 	while ( modified ) {
-		/*numIter++;
-		CHECK(cudaMemset(CUDASTOP_d, 0, sizeof(int)));*/
+
 		this->numIter++;
-		cuSts = cudaMemset( modified_d, false, sizeof(bool) ); cudaCheck( cuSts );
+		cuSts = cudaMemset( modified_d, false, sizeof(bool) ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
 		// update all ISs
 		for (uint32_t ISidx = 0; ISidx < col_d->nCol; ISidx++) {
@@ -416,12 +258,14 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 
 			// launch the Hopfield kernel
 			HopfieldNetGPU_k::updateIS_edgewise<<<blocksPerGrid, threadsPerBlock, numThreads * sizeof(float)>>>(
-					hState_d.state,			// net state
+					hState_d.state,
 					hState_d.score,
-					graph_d->getStruct(),	// graph structure (neighs, weighs, thresholds)
-					col_d,					// graph coloring
-					ISidx,					// IS ID
-					modified_d,				// stop cond
+					//graph_d->getStruct(),	// graph structure (neighs, weighs, thresholds)
+					graph_d->getStruct()->cumulDegs, graph_d->getStruct()->edgeWeights, graph_d->getStruct()->neighs, graph_d->getStruct()->nodeThresholds,
+					graph_d->getStruct()->nNodes,
+					col_d,
+					ISidx,
+					modified_d,
 					this->posState,
 					this->negState
 					);
@@ -431,7 +275,7 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 
 		}
 
-		cuSts = cudaMemcpy(&modified, modified_d, sizeof(bool), cudaMemcpyDeviceToHost); cudaCheck( cuSts );
+		cuSts = cudaMemcpy(&modified, modified_d, sizeof(bool), cudaMemcpyDeviceToHost); cudaCheck( cuSts, __FILE__, __LINE__ );
 		if (this->numIter > ITERATION_LIMIT) {
 			std::cout << "Massimo numero di iterazioni raggiunto!!! Uscita forzata" << std::endl;
 			break;
@@ -451,15 +295,16 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 	//HL->GPUrunTime = milliseconds / 1000;
 	//HL->GPUnumIter = num_iter;
 	//HL->speedup = HL->runTime / HL->GPUrunTime;
-	cuSts = cudaFree(modified_d); cudaCheck( cuSts );
+	cuSts = cudaFree(modified_d); cudaCheck( cuSts, __FILE__, __LINE__ );
 }
 
 
 template<typename nodeW, typename edgeW>
-__global__ void HopfieldNetGPU_k::updateIS_edgewise( float * const state, float * const score,				// Out values
-		const GraphStruct<nodeW, edgeW> * const graphStruct_d,									// graph stuff
-		const Coloring * const col_d, const int colorIdx,											// coloring stuff
-		bool * const modified_d,																	// stop condition
+__global__ void HopfieldNetGPU_k::updateIS_edgewise( float * const state, float * const score,
+		node_sz * cumulDegs, edgeW * edgeWeights, node * neighs_, nodeW * nodeThresholds,
+		const node_sz nNodes,
+		const Coloring * const col_d, const int colorIdx,
+		bool * const modified_d,
 		const float posState, const float negState ) {
 
 	// ID del thread all'interno del nodo, serve per la parallel reduction sum
@@ -486,8 +331,8 @@ __global__ void HopfieldNetGPU_k::updateIS_edgewise( float * const state, float 
 	//unsigned int uid = IS[ISidx][bid];   // unit ID
 	extern __shared__ float smem[];		 // fissata (per ora) al lancio del kernel come 32 * sizeof(float)
 
-	const int 		offsetDeg	= graphStruct_d->cumulDegs[nodeIdx];				// offset per neighs di nodeIdx
-	const int 		degree = graphStruct_d->cumulDegs[nodeIdx+1] - offsetDeg;		// per il ciclo
+	const int 		offsetDeg	= cumulDegs[nodeIdx];				// offset per neighs di nodeIdx
+	const int 		degree = cumulDegs[nodeIdx+1] - offsetDeg;		// per il ciclo
 
 	// Indica il numero di vicini che ogni thread deve cuccarsi
 	// es. se numero vicini = 146 e numero thread per blocco = 32 =>
@@ -504,8 +349,8 @@ __global__ void HopfieldNetGPU_k::updateIS_edgewise( float * const state, float 
 	__syncthreads();
 
 	for (int i = 0; i < neighPerThread; i++) {
-		int indx = graphStruct_d->neighs[offsetDeg + i * dim + tid];
-		smem[tid] += graphStruct_d->edgeWeights[offsetDeg + i * dim + tid] * state[indx];
+		int indx = neighs_[offsetDeg + i * dim + tid];
+		smem[tid] += edgeWeights[offsetDeg + i * dim + tid] * state[indx];
 
 #ifdef DEBUGPRINTK_IS
 		if (bid == 0)
@@ -550,8 +395,8 @@ __global__ void HopfieldNetGPU_k::updateIS_edgewise( float * const state, float 
 	if (tid == 0) {
 		unitVal oldState = state[nodeIdx];
 		// aggiorno state e score
-		score[nodeIdx] = smem[0] - graphStruct_d->nodeThresholds[nodeIdx];
-		state[nodeIdx] = SIGNTH((smem[0] - graphStruct_d->nodeThresholds[nodeIdx]));
+		score[nodeIdx] = smem[0] - nodeThresholds[nodeIdx];
+		state[nodeIdx] = SIGNTH((smem[0] - nodeThresholds[nodeIdx]));
 
 		//controllo se lo stato è stato modificato
 		if (state[nodeIdx] != oldState) {
@@ -572,28 +417,26 @@ template<typename nodeW, typename edgeW>
 		cudaError_t cuSts;
 		for (int i = 0; i < this->hState.size; i++){
 			this->hState.state[i] = static_cast<float>(inState[i]);
-			//hState.score[i] = static_cast<float>( inScore[i] );
 			this->hState.score[i] = 0;
 		}
-		cuSts = cudaMemcpy( hState_d.state, this->hState.state, hState_d.size * sizeof( unitVal ), cudaMemcpyHostToDevice ); cudaCheck( cuSts );
-		//cuSts = cudaMemcpy(hState_d.score, hState.score, hState_d.size * sizeof( unitVal ), cudaMemcpyHostToDevice ); cudaCheck( cuSts );
-		cuSts = cudaMemset( hState_d.score, 0, hState_d.size * sizeof( unitVal ) ); cudaCheck( cuSts );
+		cuSts = cudaMemcpy( hState_d.state, this->hState.state, hState_d.size * sizeof( unitVal ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
+		cuSts = cudaMemset( hState_d.score, 0, hState_d.size * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	}
 
 // setta tuti gli initial state = inValue
 template<typename nodeW, typename edgeW>
 void HopfieldNetGPU<nodeW, edgeW>::setInitState( const unitVal inValue ) {
 	cudaError_t cuSts;
-	cuSts = cudaMemset( hState_d.state, inValue, hState_d.size * sizeof( unitVal ) ); cudaCheck( cuSts );
-	cuSts = cudaMemset( hState_d.score, 0, hState_d.size * sizeof( unitVal ) ); cudaCheck( cuSts );
+	cuSts = cudaMemset( hState_d.state, inValue, hState_d.size * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemset( hState_d.score, 0, hState_d.size * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
 }
 
 // setta a 0 state e score su memoria device
 template<typename nodeW, typename edgeW>
 void HopfieldNetGPU<nodeW, edgeW>::clearInitState() {
 	cudaError_t cuSts;
-	cuSts = cudaMemset(hState_d.state, 0, hState_d.size * sizeof( unitVal )); cudaCheck( cuSts );
-	cuSts = cudaMemset(hState_d.score, 0, hState_d.size * sizeof( unitVal )); cudaCheck( cuSts );
+	cuSts = cudaMemset(hState_d.state, 0, hState_d.size * sizeof( unitVal )); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemset(hState_d.score, 0, hState_d.size * sizeof( unitVal )); cudaCheck( cuSts, __FILE__, __LINE__ );
 }
 
 // GPURandomizer riempie casualmente state e score su memoria device
@@ -617,7 +460,7 @@ void HopfieldNetGPU<nodeW, edgeW>::setInitStateProb( Prob p, char type ) {
 		unitVal nS = this->negState;
 		std::generate( this->hState.state, this->hState.state + this->hState.size, [p, pS, nS](){return SIGNTHLAMBDA(p-randf(0, 1));} );
 	}
-	cuSts = cudaMemcpy(hState_d.state, this->hState.state, hState_d.size * sizeof( unitVal ), cudaMemcpyHostToDevice ); cudaCheck( cuSts );
+	cuSts = cudaMemcpy(hState_d.state, this->hState.state, hState_d.size * sizeof( unitVal ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
 }
 
 // ritorna i valori di state e score
@@ -625,8 +468,8 @@ void HopfieldNetGPU<nodeW, edgeW>::setInitStateProb( Prob p, char type ) {
 template<typename nodeW, typename edgeW>
 void HopfieldNetGPU<nodeW, edgeW>::returnVal( double * const inState, double * const inScore ) {
 	cudaError_t cuSts;
-	cuSts = cudaMemcpy(this->hState.state, hState_d.state, hState_d.size * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts );
-	cuSts = cudaMemcpy(this->hState.score, hState_d.score, hState_d.size * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts );
+	cuSts = cudaMemcpy(this->hState.state, hState_d.state, hState_d.size * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemcpy(this->hState.score, hState_d.score, hState_d.size * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	for (int i = 0; i < hState_d.size; i++) {
 		inState[i] = static_cast<double>( this->hState.state[i] );
 		inScore[i] = static_cast<double>( this->hState.score[i] );
@@ -655,9 +498,9 @@ void HopfieldNetGPU<nodeW, edgeW>::normalizeScore( const GraphStruct<nodeW, edge
 	unitVal	*	accumulatedScores;
 	int		*	indexes;
 	unitVal	*	sumOfWghs;
-	cuSts = cudaMalloc( (void**)&accumulatedScores, bPg * sizeof( unitVal ) ); cudaCheck( cuSts );
-	cuSts = cudaMalloc( (void**)&indexes, n * sizeof( int ) ); cudaCheck( cuSts );
-	cuSts = cudaMalloc( (void**)&sumOfWghs, nOrig * sizeof( unitVal ) ); cudaCheck( cuSts );
+	cuSts = cudaMalloc( (void**)&accumulatedScores, bPg * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMalloc( (void**)&indexes, n * sizeof( int ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMalloc( (void**)&sumOfWghs, nOrig * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	std::unique_ptr<unitVal[]> accumulatedScores_h( new unitVal[bPg] );
 	std::unique_ptr<int[]>   indexes_h( new int[n] );
 	std::unique_ptr<unitVal[]> sumOfWghs_h( new unitVal[nOrig] );
@@ -683,9 +526,9 @@ void HopfieldNetGPU<nodeW, edgeW>::normalizeScore( const GraphStruct<nodeW, edge
 	}
 	cudaDeviceSynchronize();
 
-	cuSts = cudaMemcpy( accumulatedScores_h.get(), accumulatedScores, bPg * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts );
-	cuSts = cudaMemcpy( sumOfWghs, sumOfWghs_h.get(), nOrig * sizeof( unitVal ), cudaMemcpyHostToDevice ); cudaCheck( cuSts );
-	cuSts = cudaMemcpy( indexes, indexes_h.get(), n * sizeof( int ), cudaMemcpyHostToDevice ); cudaCheck( cuSts );
+	cuSts = cudaMemcpy( accumulatedScores_h.get(), accumulatedScores, bPg * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemcpy( sumOfWghs, sumOfWghs_h.get(), nOrig * sizeof( unitVal ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemcpy( indexes, indexes_h.get(), n * sizeof( int ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
 	// finisco l'accumulazione di deg e score su CPU
 	unitVal totScore = std::accumulate( accumulatedScores_h.get(), accumulatedScores_h.get() + bPg, 0.0 );
@@ -695,12 +538,12 @@ void HopfieldNetGPU<nodeW, edgeW>::normalizeScore( const GraphStruct<nodeW, edge
 	HopfieldNetGPUCompr_k::normalizeScores <<<blocksPerGrd, threadPerBlk>>> ( n, accumulatedWDeg, totScore, sumOfWghs, indexes, hState_d.score );
 	if (cudaGetLastError() != cudaSuccess) { std::cout << "CUDA ERROR: HopfieldNetGPUCompr_k::normalizeScores" << std::endl; abort(); }			// DEBUG
 
-	cuSts = cudaMemcpy( sumOfWghs_h.get(), sumOfWghs, nOrig * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts );
+	cuSts = cudaMemcpy( sumOfWghs_h.get(), sumOfWghs, nOrig * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	cudaDeviceSynchronize();
 
-	cuSts = cudaFree( sumOfWghs ); cudaCheck( cuSts );
-	cuSts = cudaFree( indexes ); cudaCheck( cuSts );
-	cuSts = cudaFree( accumulatedScores ); cudaCheck( cuSts );
+	cuSts = cudaFree( sumOfWghs ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaFree( indexes ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaFree( accumulatedScores ); cudaCheck( cuSts, __FILE__, __LINE__ );
 }
 */
 

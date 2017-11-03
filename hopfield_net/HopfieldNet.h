@@ -2,6 +2,7 @@
 
 #include "graph/graph.h"
 #include "graph_coloring/coloring.h"
+#include "GPUutils/GPUutils.h"
 #include "GPUutils/GPURandomizer.h"
 
 using namespace std;
@@ -182,21 +183,23 @@ protected:
 
 namespace HopfieldNetGPU_k {
 	template<typename nodeW, typename edgeW>
-	__global__ void updateIS_nodewise( float * const state, float * const score,				// Out values
-		const GraphStruct<nodeW, edgeW> * const graphStruct_d,
-		//uint32_t * cumulDegs, float * edgeWeights, uint32_t * neighs_, float * nodeTresholds,//
-		//const node_sz nNodes,
+	__global__ void updateIS_nodewise( float * const state, float * const score,
+		//const GraphStruct<nodeW, edgeW> * const graphStruct_d,
+		node_sz * cumulDegs, edgeW * edgeWeights, node * neighs_, nodeW * nodeTresholds,
+		const node_sz nNodes,
 		const uint32_t nCol, const uint32_t	* const colClass, const uint32_t * const cumulSize,
-		const int colorIdx,											// coloring stuff
-		bool * const modified_d,																	// stop condition
-		const float posState, const float negState, const float regulWeight );												// float const
+		const int colorIdx,
+		bool * const modified_d,
+		const float posState, const float negState, const float regulWeight );
 
 	template<typename nodeW, typename edgeW>
-	__global__ void updateIS_edgewise( float * const state, float * const score,					// Out values
-		const GraphStruct<nodeW, edgeW> * const graphStruct_d,										// graph stuff
-		const Coloring * const col_d, const int colorIdx,											// coloring stuff
-		bool * const modified_d,																	// stop condition
-		const float posState, const float negState ) ;												// float const
+	__global__ void updateIS_edgewise( float * const state, float * const score,
+		//const GraphStruct<nodeW, edgeW> * const graphStruct_d,
+		node_sz * cumulDegs, edgeW * edgeWeights, node * neighs_, nodeW * nodeTresholds,
+		const node_sz nNodes,
+		const Coloring * const col_d, const int colorIdx,
+		bool * const modified_d,
+		const float posState, const float negState );
 	/*
 	__global__ void accumulateScores( const int unlab, const unitVal * const scores,
 			unitVal * const accumScores );
