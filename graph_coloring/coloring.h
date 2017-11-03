@@ -11,6 +11,7 @@
 //#define TESTCOLORINGCORRECTNESS
 //#define PRINTCOLORINGTITLE
 //#define VERBOSECOLORING
+//#define PRINT_COLORING
 
 
 typedef uint32_t col;     // node color
@@ -87,28 +88,20 @@ public:
 #	#	#	#	#	#	#	#	#	#	#	#	#
 */
 
-//per gli #ifdef di debug
-//#define DEBUGPRINT_K
-//#define TESTCOLORINGCORRECTNESS
-//#define PRINTCOLORINGTITLE
-//#define VERBOSECOLORING
-//#define PRINT_COLORING
-
-
 // Global kernels
 namespace ColoringLuby_k {
 
 	__global__ void prune_eligible( const int nnodes, const int * const coloring_d, bool *const cands_d );
 	__global__ void set_initial_distr_k( int nnodes, curandState * states, const bool * const cands_d, bool * const i_i_d );
 	template<typename nodeW, typename edgeW>
-	__global__ void check_conflicts_k( int nnodes, const GraphStruct<nodeW, edgeW> * const graphStruct_d, bool * const i_i_d );
+	__global__ void check_conflicts_k( int nnodes, const node_sz * const cumulSize, const node * const neighs, bool * const i_i_d );
 	template<typename nodeW, typename edgeW>
-	__global__ void update_eligible_k( int nnodes, const GraphStruct<nodeW, edgeW> * const graphStruct_d, const bool * const i_i_d, bool * const cands_d, bool * const is_d );
+	__global__ void update_eligible_k( int nnodes, const node_sz * const cumulSize, const node * const neighs, const bool * const i_i_d, bool * const cands_d, bool * const is_d );
 	__global__ void check_finished_k( int nnodes, const bool * const cands_d, bool * const nodeLeft_d );
 	__global__ void add_color_and_check_uncolored_k( int nnodes, int numOfColors, const bool * const is_d, bool * const uncoloredNodes_d, int * const coloring_d );
 
 	template<typename nodeW, typename edgeW>
-	__global__ void print_graph_k( int nnodes, const GraphStruct<nodeW, edgeW> * const graphStruct_d );
+	__global__ void print_graph_k( int nnodes, const node_sz * const cumulSize, const node * const neighs );
 	/*
 	__global__ void prune_eligible_clear_is( const int nnodes, const int * const coloring_d, bool *const cands_d, bool * const is_d );
 		*/

@@ -87,7 +87,7 @@ Coloring* ColoringLuby<nodeW,edgeW>::getColoringGPU() {
 
 template<typename nodeW, typename edgeW>
 void ColoringLuby<nodeW, edgeW>::printgraph() {
-	ColoringLuby_k::print_graph_k <<< 1, 1 >>> (nnodes, graphStruct_d);
+	ColoringLuby_k::print_graph_k<nodeW, edgeW> <<< 1, 1 >>> (nnodes, graphStruct_d->cumulDegs, graphStruct_d->neighs);
 }
 
 
@@ -138,6 +138,11 @@ void ColoringLuby<nodeW, edgeW>::convert_to_standard_notation(){
 
 #ifdef TESTCOLORINGCORRECTNESS
 	std::cout << "Test colorazione attivato!" << std::endl;
+	std::unique_ptr<node_sz[]> temp_cumulDegs( new node_sz[graphStruct_d->nNodes + 1]);
+	std::unique_ptr<node[]>  temp_neighs( new node[graphStruct_d->nEdges] );
+	cudaMemcpy( temp_cumulDegs.get(), graphStruct_d->cumulDegs, (graphStruct_d->nNodes + 1) * sizeof(node_sz), cudaMemcpyDeviceToHost );
+	cudaMemcpy( temp_neighs.get(),    graphStruct_d->neighs,    graphStruct_d->nEdges * sizeof(node_sz), cudaMemcpyDeviceToHost );
+
 	for (uint32_t i = 0; i < numOfColors; i++) {
 		uint32_t ISsize = cumulSize[i + 1] - cumulSize[i];
 		uint32_t ISoffs = cumulSize[i];
@@ -223,7 +228,8 @@ __global__ void ColoringLuby_k::set_initial_distr_k( int nnodes, curandState * s
 // Gabriele: bottleneck negli accessi di memoria?
 // graphStruct_d->neighs e/o i_i_d copiati in una memoria più veloce?
 template<typename nodeW, typename edgeW>
-__global__ void ColoringLuby_k::check_conflicts_k( int nnodes, const GraphStruct<nodeW,edgeW> * const graphStruct_d, bool * const i_i_d ) {
+//__global__ void ColoringLuby_k::check_conflicts_k( int nnodes, const GraphStruct<nodeW,edgeW> * const graphStruct_d, bool * const i_i_d ) {
+__global__ void ColoringLuby_k::check_conflicts_k( int nnodes, const node_sz * const cumulDegs, const node * const neighs, bool * const i_i_d ) {
 	unsigned int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	unsigned int deg_i, neigh_ijDeg;
 	int offset, neigh_ij;
@@ -235,12 +241,12 @@ __global__ void ColoringLuby_k::check_conflicts_k( int nnodes, const GraphStruct
 	if (i_i_d[idx] == 0)
 		return;
 
-	offset = graphStruct_d->cumulDegs[idx];
-	deg_i = graphStruct_d->cumulDegs[idx+1]-graphStruct_d->cumulDegs[idx];
+	offset = cumulDegs[idx];
+	deg_i = cumulDegs[idx+1] - cumulDegs[idx];
 
 	for (int j = 0; j < deg_i; j++){
-		neigh_ij = graphStruct_d->neighs[offset + j];
-		neigh_ijDeg = graphStruct_d->cumulDegs[neigh_ij+1]-graphStruct_d->cumulDegs[neigh_ij];
+		neigh_ij = neighs[offset + j];
+		neigh_ijDeg = cumulDegs[neigh_ij+1] - cumulDegs[neigh_ij];
 
 		//se anche il nodo neigh_ij (vicino del nodo idx) è stato scelto, ne elimino uno da i_i_d
 		//la discriminazione assicura che solo uno dei due venga rimosso
@@ -269,15 +275,15 @@ __global__ void ColoringLuby_k::check_conflicts_k( int nnodes, const GraphStruct
 // Me li segno su is_d
 // Alessandro: Ottimizzazioni: copiare lista dei neigh in shared memory
 template<typename nodeW, typename edgeW>
-__global__ void ColoringLuby_k::update_eligible_k( int nnodes, const GraphStruct<nodeW,edgeW> * const graphStruct_d, const bool * const i_i_d, bool * const cands_d, bool * const is_d ) {
+__global__ void ColoringLuby_k::update_eligible_k( int nnodes, const node_sz * const cumulDegs, const node * const neighs, const bool * const i_i_d, bool * const cands_d, bool * const is_d ) {
 	unsigned int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	int deg_i, offset;
 
 	if (idx >= nnodes)
 		return;
 
-	offset = graphStruct_d->cumulDegs[idx];
-	deg_i = graphStruct_d->cumulDegs[idx+1]-graphStruct_d->cumulDegs[idx];
+	offset = cumulDegs[idx];
+	deg_i = cumulDegs[idx+1] - cumulDegs[idx];
 
 	//Gabriele: perchè prima di if (i_i_d[idx] == 0) return; ?
 	is_d[idx] |= i_i_d[idx];
@@ -295,7 +301,7 @@ __global__ void ColoringLuby_k::update_eligible_k( int nnodes, const GraphStruct
 
 	//e rimuovo dai candidati i suoi nodi adiacenti
 	for (int j = 0; j < deg_i; j++)
-		cands_d[ graphStruct_d->neighs[offset + j] ] = 0;
+		cands_d[ neighs[offset + j] ] = 0;
 	return;
 }
 
@@ -331,18 +337,18 @@ __global__ void ColoringLuby_k::add_color_and_check_uncolored_k( int nnodes, int
 
 // Stampa grafo
 template<typename nodeW, typename edgeW>
-__global__ void ColoringLuby_k::print_graph_k( int nnodes, const GraphStruct<nodeW,edgeW> * const graphStruct_d) {
+__global__ void ColoringLuby_k::print_graph_k( int nnodes, const node_sz * const cumulDegs, const node * const neighs ) {
 	int deg_i, offset;
 
 	printf( "numero nodi: %d", nnodes );
 	printf( "numero nodi 2: %d", nnodes );
 
 	for (int idx = 0; idx < nnodes; idx++) {
-		offset = graphStruct_d->cumulDegs[idx];
-		deg_i = graphStruct_d->cumulDegs[idx+1]-graphStruct_d->cumulDegs[idx];
+		offset = cumulDegs[idx];
+		deg_i = cumulDegs[idx+1] - cumulDegs[idx];
 		printf( "Nodo %d - Neigh: ", idx );
 		for (int i = 0; i < deg_i; i++)
-			printf( "%d ", graphStruct_d->neighs[offset + i] );
+			printf( "%d ", neighs[offset + i] );
 		printf( "\n" );
 	}
 	printf( "\n" );
@@ -429,7 +435,7 @@ void ColoringLuby<nodeW,edgeW>::run() {
 #endif
 
 			// Controllo sui conflitti (presenza di nodi adiacenti) e li elimino
-			ColoringLuby_k::check_conflicts_k<nodeW,edgeW> <<< blocksPerGrid, threadsPerBlock >>> (nnodes, graphStruct_d, i_i_d);
+			ColoringLuby_k::check_conflicts_k<nodeW,edgeW> <<< blocksPerGrid, threadsPerBlock >>> (nnodes, graphStruct_d->cumulDegs, graphStruct_d->neighs, i_i_d);
 			cudaDeviceSynchronize();
 
 
@@ -443,7 +449,7 @@ void ColoringLuby<nodeW,edgeW>::run() {
 #endif
 
 			// Segno i candicati controllati su is_d e rimuovo loro+vicini da cands_d
-			ColoringLuby_k::update_eligible_k<nodeW,edgeW> <<< blocksPerGrid, threadsPerBlock >>> (nnodes, graphStruct_d, i_i_d, cands_d, is_d);
+			ColoringLuby_k::update_eligible_k<nodeW,edgeW> <<< blocksPerGrid, threadsPerBlock >>> (nnodes, graphStruct_d->cumulDegs, graphStruct_d->neighs, i_i_d, cands_d, is_d);
 			cudaDeviceSynchronize();
 
 #ifdef DEBUGPRINT_K

@@ -252,7 +252,7 @@ __global__ void HopfieldNetGPU_k::updateIS_nodewise
 		printf( "threshold: %f\n", graphStruct_d->nodeThresholds[node] );
 	}*/
 
-	const int			colOffset = /*col_d->*/cumulSize[colorIdx];
+	//const int			colOffset = /*col_d->*/cumulSize[colorIdx];
 	const int 			node   = /*col_d->*/colClass[colorIdx + tid];
 	const int			offset = graphStruct_d->cumulDegs[node];
 	const int 			degree = graphStruct_d->cumulDegs[node + 1] - offset;

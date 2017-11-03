@@ -489,10 +489,9 @@ void COSNet<nodeW, edgeW>::train( uint32_t currentFold ) {
 template<typename nodeW, typename edgeW>
 void COSNet<nodeW, edgeW>::run() {
 
-	// Costruttore grafo ridotto
+	// Costruttore grafo ridotto SU GPU!
 	Graph<nodeW, edgeW> grafoRedux( unlabelledPositions, unlabelledSize, labelsPurged, str, fullToRedux, reduxToFull, threshold, true );
 
-	// Invocazione colorer
 	ColoringLuby<nodeW, edgeW> colLuby( &grafoRedux, GPURandGen->randStates );
 	colLuby.run();
 
