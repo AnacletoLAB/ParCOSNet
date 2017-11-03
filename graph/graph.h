@@ -1,5 +1,12 @@
 #pragma once
 #include <random>
+#include <memory>
+#include <vector>
+#include <string>
+#include <list>
+#include <iostream>
+#include <memory>
+#include <algorithm>
 #ifdef WIN32
 #include <cinttypes>
 #endif
@@ -34,7 +41,7 @@ template<typename nodeW, typename edgeW> struct GraphStruct {
 	nodeW*		nodeThresholds{ nullptr };
 
 	~GraphStruct() {
-		if (neighs != nullptr)			delete[] neighs; 
+		if (neighs != nullptr)			delete[] neighs;
 		if (cumulDegs != nullptr)		delete[] cumulDegs;
 		if (nodeWeights != nullptr)		delete[] nodeWeights;
 		if (edgeWeights != nullptr)		delete[] edgeWeights;
@@ -72,37 +79,40 @@ template<typename nodeW, typename edgeW> struct GraphStruct {
  * It manages a graph for CPU & GPU
  */
 template<typename nodeW, typename edgeW> class Graph {
-	float density{0.0f};	                       /// Probability of an edge (Erdos graph)
+	float density{ 0.0f };	               /// Probability of an edge (Erdos graph)
 	GraphStruct<nodeW, edgeW>* str{};      /// graph structure
-	node maxDeg{0};
-	node minDeg{0};
-	float meanDeg{0.0f};
-	bool connected{true};
-	bool GPUEnabled{true};
+	node maxDeg{ 0 };
+	node minDeg{ 0 };
+	float meanDeg{ 0.0f };
+	bool connected{ true };
+	bool GPUEnabled{ false };
 
 public:
-	Graph(node nn, bool GPUEnb) : GPUEnabled{GPUEnb} {setup(nn);}
-	Graph( fileImporter * imp, bool GPUEnb ) : GPUEnabled{GPUEnb}, fImport{ imp } { setupImporter(); }
+	Graph( node nn, bool GPUEnb ) : GPUEnabled{ GPUEnb } { setup(nn); }
+	Graph( fileImporter * imp, bool GPUEnb );
 	Graph( const uint32_t * const unlabelled, const uint32_t unlabSize, const int32_t * const labels,
-		GraphStruct<nodeW, edgeW> * const fullGraphStruct, const uint32_t * const f2R, const uint32_t * const r2F, const float * const thresholds, bool GPUEnb ) : GPUEnabled{ GPUEnb }
-			{ setupRedux( unlabelled, unlabSize, labels, fullGraphStruct, f2R, r2F, thresholds ); }
+		GraphStruct<nodeW, edgeW> * const fullGraphStruct, const uint32_t * const f2R, const uint32_t * const r2F,
+		const float * const thresholds, bool GPUEnb );
 	~Graph() {if (GPUEnabled) deleteMemGPU(); else delete str;};
 
 	void setup(node);	 /// CPU/GPU mem setup
 	void setupImporter();
 	void setupRedux( const uint32_t * const unlabelled, const uint32_t unlabSize, const int32_t * const labels,
 		GraphStruct<nodeW, edgeW> * const fullGraphStruct, const uint32_t * const f2R, const uint32_t * const r2F, const float * const thresholds );
+
+	void setupImporterGPU();
+	void setupReduxGPU( const uint32_t * const unlabelled, const uint32_t unlabSize, const int32_t * const labels,
+		GraphStruct<nodeW, edgeW> * const fullGraphStruct, const uint32_t * const f2R, const uint32_t * const r2F, const float * const thresholds );
+
 	void randGraphUnweighted(float prob, std::default_random_engine&);  /// generate an Erdos random graph
 	void print(bool);
 	void print_d(bool);
 	GraphStruct<nodeW,edgeW>* getStruct() {return str;}
 	GraphStruct<nodeW,edgeW>* getStruct() const {return str;}
-	void setMemGPU(node_sz nn, int mode);                    /// use UVA memory on CPU/GPU
+	void setMemGPU(node_sz nn, int mode);
 	void deleteMemGPU();
-	void enableGPU() {GPUEnabled = true;}
-	void disableGPU() {GPUEnabled = false;}
-	bool isGPUEnabled() {return GPUEnabled;}
-	node getMaxNodeDeg() {return maxDeg;};
+	bool isGPUEnabled() { return GPUEnabled; }
+	node getMaxNodeDeg() { return maxDeg; };
 	void efficiency();
 
 private:

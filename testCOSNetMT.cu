@@ -38,18 +38,18 @@ int main(int argc, char *argv[]) {
 	std::string			labelsFileName	= commandLine.labelFilename;
 
 	bool GPUEnabled = 1;
-
-	fileImporter fImport( graphFileName, labelsFileName );
-	fImport.getNumberOfClasses();
-	Graph<float, float> test( &fImport, GPUEnabled );
-	std::cout << "Nodi: " << test.getStruct()->nNodes << " - Archi: " << test.getStruct()->nEdges << std::endl;
-
-	N = test.getStruct()->nNodes;
-
 	int device;
 	struct cudaDeviceProp properties;
 	cudaGetDevice(&device);
 	cudaGetDeviceProperties(&properties,device);
+
+	fileImporter fImport( graphFileName, labelsFileName );
+	fImport.getNumberOfClasses();
+
+	Graph<float, float> test( &fImport, GPUEnabled );
+	std::cout << "Nodi: " << test.getStruct()->nNodes << " - Archi: " << test.getStruct()->nEdges << std::endl;
+
+	N = test.getStruct()->nNodes;
 
 	std::thread *tt = new std::thread[nThrd];
 	for (uint32_t i = 0; i < nThrd; ++i) {

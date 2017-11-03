@@ -1,11 +1,4 @@
-#include <vector>
-#include <string>
-#include <list>
-#include <iostream>
-#include <memory>
 #include "graph.h"
-
-#include <algorithm>
 
 using namespace std;
 
@@ -21,26 +14,39 @@ void Graph<nodeW, edgeW>::setup(node nn) {
 		setMemGPU(nn, GPUINIT_NODES);
 	else {
 		str = new GraphStruct<nodeW, edgeW>;
-		str->cumulDegs = new node_sz[nn + 1]{};  // starts by zero
-		// AP: str->cumulDegs dove lo distruggiamo?
+		str->cumulDegs = new node_sz[nn + 1]{};
 	}
 	str->nNodes = nn;
+}
+
+template<typename nodeW, typename edgeW>
+Graph<nodeW, edgeW>::Graph( fileImporter * imp, bool GPUEnb ) : GPUEnabled{GPUEnb}, fImport{ imp } {
+	if (!GPUEnabled)
+		setupImporter();
+	else
+		setupImporterGPU();
+}
+
+
+template<typename nodeW, typename edgeW>
+Graph<nodeW, edgeW>::Graph( const uint32_t * const unlabelled, const uint32_t unlabSize, const int32_t * const labels,
+		GraphStruct<nodeW, edgeW> * const fullGraphStruct, const uint32_t * const f2R, const uint32_t * const r2F,
+		const float * const thresholds, bool GPUEnb ) : GPUEnabled{ GPUEnb } {
+	if (!GPUEnabled)
+		setupRedux( unlabelled, unlabSize, labels, fullGraphStruct, f2R, r2F, thresholds );
+	else
+		setupReduxGPU( unlabelled, unlabSize, labels, fullGraphStruct, f2R, r2F, thresholds );
 }
 
 
 template<typename nodeW, typename edgeW>
 void Graph<nodeW, edgeW>::setupImporter() {
-	uint32_t nn = fImport->nNodes;
 
-	if (GPUEnabled)
-		setMemGPU(nn, GPUINIT_NODES);
-	else {
-		str = new GraphStruct<nodeW, edgeW>;
-		str->cumulDegs = new node_sz[nn + 1];  // starts by zero
-	}
+	uint32_t nn = fImport->nNodes;
+	str = new GraphStruct<nodeW, edgeW>;
+	str->cumulDegs = new node_sz[nn + 1];
 	str->nNodes = nn;
 
-	// Creo le liste temporanee
 #ifdef VERBOSEGRAPH
 	std::cout << "Creazione liste temporanee..." << std::endl;
 #endif
@@ -51,7 +57,6 @@ void Graph<nodeW, edgeW>::setupImporter() {
 		tempW[i] = new std::list<edgeW>;
 	}
 
-	// Leggo gli archi dal file del grafo
 	fImport->fRewind();
 	while (fImport->getNextEdge()) {
 		if (fImport->edgeIsValid) {
@@ -71,17 +76,9 @@ void Graph<nodeW, edgeW>::setupImporter() {
 	for (uint32_t i = 1; i < (nn + 1); i++)
 		str->cumulDegs[i] += ( str->cumulDegs[i - 1] + tempN[i - 1]->size() );
 
-
-	// Ora aggiungo gli archi
-	if (GPUEnabled) {
-		setMemGPU( nn, GPUINIT_EDGES );
-		setMemGPU( nn, GPUINIT_EDGEW );
-		setMemGPU( nn, GPUINIT_NODET );
-	} else {
-		str->neighs = new node[str->nEdges];
-		str->edgeWeights = new edgeW[str->nEdges];
-		str->nodeThresholds = new nodeW[str->nNodes];
-	}
+	str->neighs = new node[str->nEdges];
+	str->edgeWeights = new edgeW[str->nEdges];
+	str->nodeThresholds = new nodeW[str->nNodes];
 
 	for (uint32_t i = 0; i < nn; i++) {
 		uint32_t j = 0;
@@ -121,20 +118,17 @@ void Graph<nodeW, edgeW>::setupImporter() {
 	delete[] tempN;
 }
 
+
 // Questo setup è su con lo sputo. E' un miracolo se funziona.
 template<typename nodeW, typename edgeW>
 void Graph<nodeW, edgeW>::setupRedux( const uint32_t * const unlabelled, const uint32_t unlabSize, const int32_t * const labels,
 	GraphStruct<nodeW, edgeW> * const fullGraphStruct, const uint32_t * const f2R, const uint32_t * const r2F, const float * const thresholds ) {
 
-	if (GPUEnabled) {
-		setMemGPU( unlabSize, GPUINIT_NODES );
-	} else {
-		str = new GraphStruct<nodeW, edgeW>;
-		str->cumulDegs = new node_sz[str->nNodes + 1];  // starts by zero
-	}
+	str = new GraphStruct<nodeW, edgeW>;
+	str->cumulDegs = new node_sz[str->nNodes + 1];
 	str->nNodes = unlabSize;
 	str->nEdges = 0;
-	//str->cumulDegs[0] = 0;
+
 	std::fill( str->cumulDegs, str->cumulDegs + str->nNodes + 1, 0 );
 
 	for (uint32_t i = 0; i < unlabSize; i++) {
@@ -154,15 +148,9 @@ void Graph<nodeW, edgeW>::setupRedux( const uint32_t * const unlabelled, const u
 
 	// Ora posso allocare le restanti strutture del grafo ridotto
 	str->nEdges = str->cumulDegs[str->nNodes];
-	if (GPUEnabled) {
-		setMemGPU( str->nNodes, GPUINIT_EDGES );
-		setMemGPU( str->nNodes, GPUINIT_EDGEW );
-		setMemGPU( str->nNodes, GPUINIT_NODET );
-	} else {
-		str->neighs = new node[str->nEdges];
-		str->edgeWeights = new edgeW[str->nEdges];
-		str->nodeThresholds = new nodeW[str->nNodes];
-	}
+	str->neighs = new node[str->nEdges];
+	str->edgeWeights = new edgeW[str->nEdges];
+	str->nodeThresholds = new nodeW[str->nNodes];
 
 	// Altro ciclo per riempire la lista dei vicini e dei pesi degli archi associati
 	for (uint32_t i = 0; i < unlabSize; i++) {
@@ -194,6 +182,7 @@ void Graph<nodeW, edgeW>::setupRedux( const uint32_t * const unlabelled, const u
  * Generate a new random graph
  * @param eng seed
  */
+ // TODO: adeguare alla rimozione della Unified Memory
 template<typename nodeW, typename edgeW>
 void Graph<nodeW, edgeW>::randGraphUnweighted(float prob,
 		std::default_random_engine & eng) {
@@ -238,7 +227,7 @@ void Graph<nodeW, edgeW>::randGraphUnweighted(float prob,
 
 	// manage memory for edges with CUDA Unified Memory
 	if (GPUEnabled)
-		setMemGPU(n, GPUINIT_EDGES);
+		setMemGPU(str->nEdges, GPUINIT_EDGES);
 	else
 		str->neighs = new node[str->nEdges] { };
 		// AP: str->neighs dove viene distrutto?
