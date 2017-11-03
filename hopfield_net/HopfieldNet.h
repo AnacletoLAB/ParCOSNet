@@ -114,7 +114,8 @@ namespace HopfieldNetGPU_k {
 	__global__ void updateIS_edgewise( float * const state, float * const score,
 		node_sz * cumulDegs, edgeW * edgeWeights, node * neighs_, nodeW * nodeTresholds,
 		const node_sz nNodes,
-		const Coloring * const col_d, const int colorIdx,
+		const uint32_t nCol, const uint32_t	* const colClass, const uint32_t * const cumulSize,
+		const int colorIdx,
 		bool * const modified_d,
 		const float posState, const float negState );
 	/*

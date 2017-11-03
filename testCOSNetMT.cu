@@ -69,6 +69,8 @@ int main(int argc, char *argv[]) {
 		tt[i] = std::thread( doMT<float,float>, i, nThrd, N, seed, test.getStruct(), &fImport );
 	}
 
+	std::this_thread::yield();
+
 	for (int i = 0; i < nThrd; ++i)
 		tt[i].join();
 	delete[] tt;

@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
 
 	std::cout << "classe: " << std::flush;
 	// Ciclo sulle classi contenute nel file...
-	#pragma omp parallel for default(none) shared(labelLock, fImport, test, std::cout, N, seed, curandGen)
+	#pragma omp parallel for default(none) shared(labelLock, fImport, test, std::cout, N, seed)
 	for (uint32_t cl = 0; cl < fImport.nOfClasses; cl++) {
 
 		std::cout << cl << " " << std::flush;

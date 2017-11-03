@@ -54,9 +54,11 @@ HopfieldNetGPU<nodeW, edgeW>::~HopfieldNetGPU() {
 template<typename nodeW, typename edgeW>
 void HopfieldNetGPU<nodeW, edgeW>::run_nodewise() {
 	cudaError_t cuSts;
+
 #ifdef PRINTHOPFIELDTITLE
 	std::cout << "\033[32;1m** Hopfiled Net GPU alternative runner **\033[0m" << std::endl;
 #endif
+
 	cudaEvent_t start, stop;
 	cudaEventCreate(&start);
 	cudaEventCreate(&stop);
@@ -66,8 +68,7 @@ void HopfieldNetGPU<nodeW, edgeW>::run_nodewise() {
 	bool *modified_d;
 	cuSts = cudaMalloc( (void**) &modified_d, sizeof(bool) ); cudaCheck(cuSts,__FILE__,__LINE__);
 
-// vedi commenti di HopfieldNetGPU::run()
-// ah, gia'... non ci sono commenti in HopfieldNetGPU::run()
+	//alloco e copio cumulSize
 	std::unique_ptr<uint32_t[]> ISsize_h( new uint32_t[col_d->nCol + 1] );
 	cuSts = cudaMemcpy( ISsize_h.get(), col_d->cumulSize, (col_d->nCol + 1) * sizeof( uint32_t ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
@@ -79,13 +80,13 @@ void HopfieldNetGPU<nodeW, edgeW>::run_nodewise() {
 
 	cudaEventRecord( start );
 	while (modified) {
+
 		this->numIter++;
 		cuSts = cudaMemset( modified_d, false, sizeof(bool) ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
-		for (int ISidx = 0; ISidx < col_d->nCol; ISidx++) {
+		for (uint32_t ISidx = 0; ISidx < col_d->nCol; ISidx++) {
 
-			int numberOfNodes = ISsize_h[ISidx + 1] - ISsize_h[ISidx];
-
+			uint32_t numberOfNodes = ISsize_h[ISidx + 1] - ISsize_h[ISidx];
 			blocksPerGrid = dim3( (numberOfNodes + threadsPerBlock.x - 1) / threadsPerBlock.x, 1, 1 );
 
 			// launch the Hopfield kernel
@@ -103,16 +104,12 @@ void HopfieldNetGPU<nodeW, edgeW>::run_nodewise() {
 					);
 
 			cudaDeviceSynchronize();
-			cuSts = cudaGetLastError();
-			if (cuSts != cudaSuccess) {
-				std::cout << "HopfieldNetGPUCompr_k::updateIS_altern, iterazione n: " << this->numIter << std::endl;
-				std::cout << "errore: " << cudaGetErrorString( cuSts ) << std::endl;
-				abort();
-			}
+			cuSts = cudaGetLastError(); cudaCheck( cuSts, __FILE__, __LINE__ );
+
 		}
 
 		cuSts = cudaMemcpy(&modified, modified_d, sizeof(bool), cudaMemcpyDeviceToHost); cudaCheck( cuSts, __FILE__, __LINE__ );
-		if (this->numIter > 5000) {
+		if (this->numIter > ITERATION_LIMIT) {
 			std::cout << "Massimo numero di iterazioni raggiunto!!! Uscita forzata" << std::endl;
 			break;
 		}
@@ -203,12 +200,10 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 	cudaEventCreate(&stop);
 
 	//conto iterazioni e criterio di arresto
-	unsigned N = graph_d->getStruct()->nNodes;
 	this->numIter = 0;
 	bool modified = true;
 	bool *modified_d;
 	cuSts = cudaMalloc( (void**) &modified_d, sizeof(bool) ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	cuSts = cudaMemset( modified_d, true, sizeof( bool ) ); cudaCheck( cuSts, __FILE__, __LINE__ ); //forse non serve ma andiamo sul sicuro
 
 	//alloco e copio cumulSize
 	std::unique_ptr<uint32_t[]> cumulSize_h( new uint32_t[ (col_d->nCol+1) ] );
@@ -243,7 +238,7 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 			//dim3 gridsize(col.ISsize[ISidx]);	// num blocks = IS size
 			//dim3 gridsize( ISsize_h[ISidx] );
 
-			uint32_t colorSize = col_d->cumulSize[ISidx + 1] - col_d->cumulSize[ISidx];
+			uint32_t colorSize = cumulSize_h[ISidx + 1] - cumulSize_h[ISidx];
 			blocksPerGrid = dim3( colorSize, 1, 1 );
 
 			// launch the Hopfield kernel
@@ -252,15 +247,15 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 					hState_d.score,
 					graph_d->getStruct()->cumulDegs, graph_d->getStruct()->edgeWeights, graph_d->getStruct()->neighs, graph_d->getStruct()->nodeThresholds,
 					graph_d->getStruct()->nNodes,
-					col_d,
+					col_d->nCol, col_d-> colClass, col_d->cumulSize,
 					ISidx,
 					modified_d,
 					this->posState,
 					this->negState
-					);
+				);
 
 			cudaDeviceSynchronize();
-			if (cudaGetLastError() != cudaSuccess) { std::cout << "CUDA ERROR: HopfieldNetGPU_k::updateIS_edgewise" << std::endl; abort(); }			// DEBUG
+			cuSts = cudaGetLastError(); cudaCheck( cuSts, __FILE__, __LINE__ );
 
 		}
 
@@ -271,8 +266,8 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 		}
 	}
 
-	CHECK(cudaEventRecord(stop));
-	CHECK(cudaEventSynchronize(stop));
+	cuSts = cudaEventRecord(stop); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaEventSynchronize(stop); cudaCheck( cuSts, __FILE__, __LINE__ );
 	float milliseconds = 0;
 	cudaEventElapsedTime(&milliseconds, start, stop);
 #ifdef VERBOSEHOPFIELD
@@ -280,7 +275,7 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 #endif
 
 	// final state & log
-	CHECK(cudaMemcpy(this->hState.state, hState_d.state, N * sizeof(int), cudaMemcpyDeviceToHost));
+	cuSts = cudaMemcpy(this->hState.state, hState_d.state, this->hState.size * sizeof(int), cudaMemcpyDeviceToHost); cudaCheck( cuSts, __FILE__, __LINE__ );
 	//HL->GPUrunTime = milliseconds / 1000;
 	//HL->GPUnumIter = num_iter;
 	//HL->speedup = HL->runTime / HL->GPUrunTime;
@@ -292,7 +287,8 @@ template<typename nodeW, typename edgeW>
 __global__ void HopfieldNetGPU_k::updateIS_edgewise( float * const state, float * const score,
 		node_sz * cumulDegs, edgeW * edgeWeights, node * neighs_, nodeW * nodeThresholds,
 		const node_sz nNodes,
-		const Coloring * const col_d, const int colorIdx,
+		const uint32_t nCol, const uint32_t	* const colClass, const uint32_t * const cumulSize,
+		const int colorIdx,
 		bool * const modified_d,
 		const float posState, const float negState ) {
 
@@ -306,16 +302,16 @@ __global__ void HopfieldNetGPU_k::updateIS_edgewise( float * const state, float 
 	unsigned int dim = blockDim.x;		 // "larghezza" thread:
 
 	// color idx supera numero colori?
-	if (colorIdx >= col_d->nCol)
+	if (colorIdx >= nCol)
 		return;
 
-	const int 		offsetCol = col_d->cumulSize[colorIdx];						// offset per il coloring
+	const int 		offsetCol = cumulSize[colorIdx];						// offset per il coloring
 
 	// il kernel non deve prendere nodi nodeIdx al di fuori del colore attuale
-	if( (offsetCol + bid) >= col_d->cumulSize[colorIdx + 1] )
+	if( (offsetCol + bid) >= cumulSize[colorIdx + 1] )
 		return;
 
-	const int 		nodeIdx = col_d->colClass[offsetCol + bid];					// indice del nodo in cui lavoreremo
+	const int 		nodeIdx = colClass[offsetCol + bid];					// indice del nodo in cui lavoreremo
 
 	extern __shared__ float smem[];		 // fissata (per ora) al lancio del kernel come 32 * sizeof(float)
 
