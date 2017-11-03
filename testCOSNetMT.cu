@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
 	fileImporter fImport( graphFileName, labelsFileName );
 	fImport.getNumberOfClasses();
 
-	Graph<float, float> test( &fImport, GPUEnabled );
+	Graph<float, float> test( &fImport, !GPUEnabled );	// Grafo completo DEVE rimanere su CPU
 	std::cout << "Nodi: " << test.getStruct()->nNodes << " - Archi: " << test.getStruct()->nEdges << std::endl;
 
 	N = test.getStruct()->nNodes;
@@ -71,6 +71,7 @@ void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, Grap
 
 		GPURand curandGen( N, seed + thrdNum );	// Questo potrei portarlo fuori e creare un array di oggetti...
 
+		// la graphStruct che passiamo a COSNet e' su CPU
 		COSNet<float, float> CN( N, test, &curandGen );
 
 		g_labelLock.lock();
