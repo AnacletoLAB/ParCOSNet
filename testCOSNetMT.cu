@@ -5,6 +5,7 @@
 #include <mutex>
 #include "utils/ArgHandle.h"
 #include "utils/fileImporter.h"
+#include "utils/timer.h"
 #include "graph/graph.h"
 #include "graph/graphCPU.cpp"
 #include "graph/graphGPU.cu"
@@ -47,12 +48,11 @@ int main(int argc, char *argv[]) {
 	uint32_t			nThrd			= commandLine.nThreads;
 	std::string			graphFileName	= commandLine.dataFilename;
 	std::string			labelsFileName	= commandLine.labelFilename;
+	std::string			timeFileName	= commandLine.timeFilename;
 
 	bool GPUEnabled = 1;
-	/*int device;
-	struct cudaDeviceProp properties;
-	cudaGetDevice(&device);
-	cudaGetDeviceProperties(&properties,device);*/
+
+	Timer ttimer;
 
 	fileImporter fImport( graphFileName, labelsFileName );
 	fImport.getNumberOfClasses();
@@ -64,6 +64,8 @@ int main(int argc, char *argv[]) {
 
 	std::cout << "Classe: " << std::flush;
 
+	ttimer.startTime();
+
 	std::thread *tt = new std::thread[nThrd];
 	for (uint32_t i = 0; i < nThrd; ++i) {
 		tt[i] = std::thread( doMT<float,float>, i, nThrd, N, seed, test.getStruct(), &fImport );
@@ -74,6 +76,10 @@ int main(int argc, char *argv[]) {
 	for (uint32_t i = 0; i < nThrd; ++i)
 		tt[i].join();
 	delete[] tt;
+
+	ttimer.endTime();
+	ttimer.saveTimeToFile( timeFileName, true, N, test.getStruct()->nEdges, fImport.nOfClasses,
+				graphFileName, labelsFileName, nThrd );
 
 	return 0;
 }

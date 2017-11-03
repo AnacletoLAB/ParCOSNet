@@ -21,6 +21,7 @@ public:
 	std::string		foldFilename;
 	std::string		labelFilename;
 	std::string		outFilename;
+	std::string		timeFilename;
 
 	uint32_t		m;
 	uint32_t		n;

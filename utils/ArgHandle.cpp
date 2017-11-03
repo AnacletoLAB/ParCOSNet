@@ -4,7 +4,7 @@
 #include <getopt.h>
 
 ArgHandle::ArgHandle( int argc, char **argv ) :
-		dataFilename( "" ), foldFilename( "" ), labelFilename( "" ), outFilename( "" ), m( 0 ), n( 0 ), prob( 0.0 ),
+		dataFilename( "" ), foldFilename( "" ), labelFilename( "" ), outFilename( "" ), timeFilename( "" ), m( 0 ), n( 0 ), prob( 0.0 ),
 		nFolds( 0 ), seed( 0 ), verboseLevel(0),
 		nThreads( 0 ),
 		generateRandomFold( false ), simulate( false ), argc( argc ), argv( argv ) {
@@ -14,7 +14,7 @@ ArgHandle::~ArgHandle() {}
 
 void ArgHandle::processCommandLine() {
 
-	char const *short_options = "d:l:f:m:n:s:N:o:k:mt:S:q:v:h";
+	char const *short_options = "d:l:f:m:n:s:N:o:k:mt:S:q:t:v:h";
 	const struct option long_options[] = {
 
 		{ "data",			required_argument, 0, 'd' },
@@ -27,6 +27,7 @@ void ArgHandle::processCommandLine() {
 		{ "out",			required_argument, 0, 'o' },
 		{ "seed",			required_argument, 0, 'S' },
 		{ "nThrd",			required_argument, 0, 'q' },
+		{ "tttt",			required_argument, 0, 't' },
 		{ "verbose-level",	required_argument, 0, 'v' },
 		{ "help",			no_argument,	   0, 'h' },
 		{ 0, 0, 0, 0 }
@@ -72,6 +73,10 @@ void ArgHandle::processCommandLine() {
 
 		case 'o':
 			outFilename = std::string( optarg );
+			break;
+
+		case 't':
+			timeFilename = std::string( optarg );
 			break;
 
 		case 'n':

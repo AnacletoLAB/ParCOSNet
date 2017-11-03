@@ -3,6 +3,7 @@
 #include <ctime>
 #include "utils/ArgHandle.h"
 #include "utils/fileImporter.h"
+#include "utils/timer.h"
 #include "graph/graph.h"
 #include "graph/graphCPU.cpp"
 #include "graph/graphGPU.cu"
@@ -34,6 +35,8 @@ int main(int argc, char *argv[]) {
 
 	bool GPUEnabled = 1;
 
+	Timer ttimer;
+
 	fileImporter fImport( graphFileName, labelsFileName );
 	fImport.getNumberOfClasses();
 	Graph<float, float> test( &fImport, !GPUEnabled );
@@ -46,6 +49,9 @@ int main(int argc, char *argv[]) {
 	omp_init_lock( &labelLock );
 
 	std::cout << "classe: " << std::flush;
+
+	ttimer.startTime();
+
 	// Ciclo sulle classi contenute nel file...
 	#pragma omp parallel for default(none) shared(labelLock, fImport, test, std::cout, N, seed)
 	for (uint32_t cl = 0; cl < fImport.nOfClasses; cl++) {
@@ -79,6 +85,10 @@ int main(int argc, char *argv[]) {
 		//		fExport.save()
 		// }
 	}
+
+	ttimer.endTime();
+	ttimer.saveTimeToFile( timeFileName, true, N, test.getStruct()->nEdges, fImport.nOfClasses,
+				graphFileName, labelsFileName, nThrd );
 
 	omp_destroy_lock( &labelLock );
 
