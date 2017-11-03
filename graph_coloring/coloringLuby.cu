@@ -66,6 +66,15 @@ ColoringLuby<nodeW, edgeW>::~ColoringLuby() {
 	cuSts = cudaFree( i_i_d ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	cuSts = cudaFree( is_d ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	cuSts = cudaFree( coloring_d ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	if (outColoring_d->colClass != nullptr) {
+		cudaFree( outColoring_d->colClass );
+		outColoring_d->colClass = nullptr;
+	}
+	if (outColoring_d->colClass != nullptr) {
+		cudaFree( outColoring_d->cumulSize );
+		outColoring_d->cumulSize = nullptr;
+	}
+
 }
 
 

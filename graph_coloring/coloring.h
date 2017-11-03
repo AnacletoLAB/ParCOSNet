@@ -22,9 +22,9 @@ typedef uint32_t col_sz;     // node color
 
 // graph coloring
 struct Coloring {
-	uint32_t	 		nCol;		// num of color classes
-	uint32_t		*	colClass;	// list (array) of all node colors class by class
-	uint32_t		*	cumulSize;	// cumulative color class sizes
+	uint32_t	 		nCol { 0 };				// num of color classes
+	uint32_t		*	colClass { nullptr };	// list (array) of all node colors class by class
+	uint32_t		*	cumulSize { nullptr };	// cumulative color class sizes
 
 	/// return the size of class c
 	uint32_t classSize(col c) {

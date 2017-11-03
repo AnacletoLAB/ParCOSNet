@@ -24,16 +24,26 @@ COSNet<nodeW, edgeW>::COSNet( uint32_t nNodes, GraphStruct<nodeW, edgeW> * graph
 
 template<typename nodeW, typename edgeW>
 COSNet<nodeW,edgeW>::~COSNet( ) {
-	if (threshold != nullptr)
+	if (threshold != nullptr) {
 		delete[] threshold;
-	if (neg_neigh != nullptr)
+		threshold = nullptr;
+	}
+	if (neg_neigh != nullptr) {
 		delete[] neg_neigh;
-	if (pos_neigh != nullptr)
+		neg_neigh = nullptr;
+	}
+	if (pos_neigh != nullptr) {
 		delete[] pos_neigh;
-	if (unlabelledPositions != nullptr)
+		pos_neigh = nullptr;
+	}
+	if (unlabelledPositions != nullptr) {
 		delete[] unlabelledPositions;
-	if (labelledPositions != nullptr)
+		unlabelledPositions = nullptr;
+	}
+	if (labelledPositions != nullptr) {
 		delete[] labelledPositions;
+		labelledPositions = nullptr;
+	}
 	delete[] reduxToFull;
 	delete[] fullToRedux;
 	delete[] newLabels;
@@ -470,7 +480,7 @@ void COSNet<nodeW, edgeW>::run() {
 
 	HopfieldNetGPU<nodeW, edgeW> HN_d( &grafoRedux, colLuby.getColoringGPU(), sin( alpha ), -cos( alpha ), regulWeight );
 	HN_d.clearInitState();
-	HN_d.run_edgewise();
+	HN_d.run_nodewise();
 	//HN_d.normalizeScore( str, &reduxToFull );
 
 	//HN_d.returnVal( stateRedux.get(), scoreRedux.get() );
@@ -487,6 +497,29 @@ void COSNet<nodeW, edgeW>::setLabels( std::vector<int32_t> &labelsFromFile ) {
 	return;
 }
 
+template<typename nodeW, typename edgeW>
+void COSNet<nodeW, edgeW>::deallocateLabs() {
+	if (threshold != nullptr) {
+		delete[] threshold;
+		threshold = nullptr;
+	}
+	if (neg_neigh != nullptr) {
+		delete[] neg_neigh;
+		neg_neigh = nullptr;
+	}
+	if (pos_neigh != nullptr) {
+		delete[] pos_neigh;
+		pos_neigh = nullptr;
+	}
+	if (unlabelledPositions != nullptr) {
+		delete[] unlabelledPositions;
+		unlabelledPositions = nullptr;
+	}
+	if (labelledPositions != nullptr) {
+		delete[] labelledPositions;
+		labelledPositions = nullptr;
+	}
+}
 
 
 //template class COSNet<uint32_t, uint32_t>;

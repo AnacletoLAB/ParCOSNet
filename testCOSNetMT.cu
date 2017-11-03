@@ -49,10 +49,10 @@ int main(int argc, char *argv[]) {
 	std::string			labelsFileName	= commandLine.labelFilename;
 
 	bool GPUEnabled = 1;
-	int device;
+	/*int device;
 	struct cudaDeviceProp properties;
 	cudaGetDevice(&device);
-	cudaGetDeviceProperties(&properties,device);
+	cudaGetDeviceProperties(&properties,device);*/
 
 	fileImporter fImport( graphFileName, labelsFileName );
 	fImport.getNumberOfClasses();
@@ -101,6 +101,7 @@ void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, Grap
 		for (uint32_t currentFold = 0; currentFold < CN.numberOfFolds; currentFold++) {
 			CN.train( currentFold );
 			CN.run();
+			CN.deallocateLabs();
 		}
 
 		// Eventuale salvataggio dei risultati; deve essere messo in sezione critica

@@ -70,6 +70,7 @@ int main(int argc, char *argv[]) {
 		for (uint32_t currentFold = 0; currentFold < CN.numberOfFolds; currentFold++) {
 			CN.train( currentFold );
 			CN.run();
+			CN.deallocateLabs();
 		}
 
 		// Eventuale salvataggio dei risultati; deve essere messo in sezione critica

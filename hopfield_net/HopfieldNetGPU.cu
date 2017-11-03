@@ -129,6 +129,9 @@ void HopfieldNetGPU<nodeW, edgeW>::run_nodewise() {
 	//HL->GPUnumIter = num_iter;
 	//HL->speedup = HL->runTime / HL->GPUrunTime;
 	cuSts = cudaFree(modified_d); cudaCheck( cuSts, __FILE__, __LINE__ );
+
+	cuSts = cudaEventDestroy( stop ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaEventDestroy( start ); cudaCheck( cuSts, __FILE__, __LINE__ );
 }
 
 template<typename nodeW, typename edgeW>
@@ -280,6 +283,9 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 	//HL->GPUnumIter = num_iter;
 	//HL->speedup = HL->runTime / HL->GPUrunTime;
 	cuSts = cudaFree(modified_d); cudaCheck( cuSts, __FILE__, __LINE__ );
+
+	cuSts = cudaEventDestroy( stop ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaEventDestroy( start ); cudaCheck( cuSts, __FILE__, __LINE__ );
 }
 
 
