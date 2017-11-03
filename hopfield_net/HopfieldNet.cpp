@@ -8,25 +8,6 @@
 
 using namespace std;
 
-
-
-
-
-
-
-//HopfiledNet implementata perchè la versione GPU richiama i costruttori
-
-/*
-#	#	#	#	#	#	#	#	#	#	#	#	#
-
-				HopfieldNet CLASS
-
-#	#	#	#	#	#	#	#	#	#	#	#	#
-*/
-
-/*
- * Construct a new net by a graph and a coloring
- */
 template<typename nodeW, typename edgeW>
 HopfieldNet<nodeW, edgeW>::HopfieldNet( const Graph<nodeW, edgeW> * const inGraph, const Coloring * const inCol, float inPosState, float inNegState, float inRegulWeight ):
 		graph(inGraph),
@@ -35,11 +16,7 @@ HopfieldNet<nodeW, edgeW>::HopfieldNet( const Graph<nodeW, edgeW> * const inGrap
 		negState((float)inNegState),
 		regulWeight((float)inRegulWeight) {
 
-	//hState quando viene dichiarato? se lo dichiaro adesso si incarta?
-	//hState = new HopfState;
 	hState.size = inGraph->getStruct()->nNodes;
-	//hState.score = new unitVal[hState.size];
-	//hState.state = new unitVal[hState.size];
 
 	//set ordine di aggiornamento (non serve nella versione GPU)
 	//riscritto per sicurezza
@@ -48,23 +25,12 @@ HopfieldNet<nodeW, edgeW>::HopfieldNet( const Graph<nodeW, edgeW> * const inGrap
 		unitUpdateOrder[i] = i;*/
 }
 
-/*
- * virtual destructor
- */
 template<typename nodeW, typename edgeW>
 HopfieldNet<nodeW, edgeW>::~HopfieldNet() {
-	//delete[]	hState.state;
-	//delete[]	hState.score;
-//	delete[]	unitUpdateOrder;	// Questo mancava...
+	//delete[]	unitUpdateOrder;
 };
 
-/*
-#	#	#	#	#	#	#	#	#	#	#	#	#
 
-				HopfieldNet METHODS
-
-#	#	#	#	#	#	#	#	#	#	#	#	#
-*/
 template<typename nodeW, typename edgeW>
 int HopfieldNet<nodeW, edgeW>::getNumIter() const {
 	return numIter;

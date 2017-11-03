@@ -7,6 +7,8 @@
 
 #include "graph/graph.h"
 
+
+// TODO: rifare per supportare grafi non memorizzati in Unified Memory
 template<typename nodeW, typename edgeW>
 class COSNetCommon {
 public:

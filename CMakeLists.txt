@@ -21,8 +21,6 @@ INCLUDE(FindCUDA)
 #SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; --compiler-options -fno-strict-aliasing -lineinfo -use_fast_math -Xptxas -dlcm=cg)
 SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_60,code=sm_60;)
 SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_52,code=sm_52;)
-#SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_30,code=sm_30;)
-#SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_35,code=sm_35;)
 
 #SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -std=c++11; -O3; -Xcompiler -fPIC;)
 SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -default-stream per-thread;)
@@ -41,22 +39,22 @@ FIND_PACKAGE(CUDA REQUIRED QUIET)
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O0 -g")
 
 SET(SOURCESCPP      "COSNet/COSNet.cpp"
-			"COSNet/COSNetCommon.cpp"
-			"graph/graphCPU.cpp"
-			"graph_coloring/colorer.cpp"
-			"hopfield_net/HopfieldNetUtils.cpp"
-			"hopfield_net/HopfieldNet.cpp"
-			"utils/ArgHandle.cpp"
-			"utils/fileImporter.cpp"
-			"utils/timer.cpp")
+					"COSNet/COSNetCommon.cpp"
+					"graph/graphCPU.cpp"
+					"graph_coloring/colorer.cpp"
+					"hopfield_net/HopfieldNetUtils.cpp"
+					"hopfield_net/HopfieldNet.cpp"
+					"utils/ArgHandle.cpp"
+					"utils/fileImporter.cpp"
+					"utils/timer.cpp")
 SET(SOURCESCUDA     "GPUutils/GPUCudaCleaner.cu"
                 	"GPUutils/GPUStream.cu"
                 	"GPUutils/GPURandomizer.cu"
-			"graph/graphGPU.cu"
+					"graph/graphGPU.cu"
                 	"graph_coloring/coloringLuby.cu"
-			"hopfield_net/HopfieldNetGPU_ale.cu"
+					"hopfield_net/HopfieldNetGPU.cu"
 #					"testColoring_Benchmark.cu")
-			"testCOSNetMT.cu")
+					"testCOSNetMT.cu")
 
 CUDA_ADD_EXECUTABLE(COSNet ${SOURCESCUDA} ${SOURCESCPP})
 

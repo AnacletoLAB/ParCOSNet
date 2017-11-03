@@ -14,7 +14,6 @@
 #include "GPUutils/GPURandomizer.h"
 
 typedef uint32_t node;     // graph node
-//typedef unsigned long long int node_sz;  // graph node size
 typedef uint32_t node_sz;
 
 typedef float Prob;
@@ -32,12 +31,12 @@ enum GPUMEMINITTYPES {
  * Base structure (array 1D format) of a graph with weighted nodes/edges
  */
 template<typename nodeW, typename edgeW> struct GraphStruct {
-	node		nNodes{0};             // num of graph nodes
-	node_sz		nEdges{0};             // num of graph edges
-	node_sz*	cumulDegs{ nullptr };           // cumsum of node degrees
-	node*		neighs{ nullptr };               // list of neighbors for all nodes (edges)
-	nodeW*		nodeWeights{ nullptr };         // list of weights for all nodes
-	edgeW*		edgeWeights{ nullptr };         // list of weights for all edges
+	node		nNodes{0};					// num of graph nodes
+	node_sz		nEdges{0};					// num of graph edges
+	node_sz*	cumulDegs{ nullptr };		// cumsum of node degrees
+	node*		neighs{ nullptr };			// list of neighbors for all nodes (edges)
+	nodeW*		nodeWeights{ nullptr };		// list of weights for all nodes
+	edgeW*		edgeWeights{ nullptr };		// list of weights for all edges
 	nodeW*		nodeThresholds{ nullptr };
 
 	~GraphStruct() {
@@ -95,7 +94,7 @@ public:
 		const float * const thresholds, bool GPUEnb );
 	~Graph() {if (GPUEnabled) deleteMemGPU(); else delete str;};
 
-	void setup(node);	 /// CPU/GPU mem setup
+	void setup(node);
 	void setupImporter();
 	void setupRedux( const uint32_t * const unlabelled, const uint32_t unlabSize, const int32_t * const labels,
 		GraphStruct<nodeW, edgeW> * const fullGraphStruct, const uint32_t * const f2R, const uint32_t * const r2F, const float * const thresholds );

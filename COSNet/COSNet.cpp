@@ -374,12 +374,6 @@ void COSNet<nodeW, edgeW>::extractFolds( const int32_t * const labels, const uin
 template<typename nodeW, typename edgeW>
 void COSNet<nodeW, edgeW>::prepare() {
 	extractFolds( labels, nNodes, numberOfFolds, folds, foldIndex, numPositiveInFolds );
-	//for (uint32_t i = 0; i < numberOfFolds + 1; i++)
-	//	std::cout << foldIndex[i] << " ";
-	//std::cout << std::endl;
-	//for (uint32_t i = 0; i < nNodes; i++)
-	//	std::cout << folds[i] << " ";
-	//std::cout << std::endl;
 }
 
 template<typename nodeW, typename edgeW>
@@ -394,10 +388,6 @@ void COSNet<nodeW, edgeW>::train( uint32_t currentFold ) {
 	// imposto a 0 le etichette corrispondenti ai nodi del fold
 	std::memcpy( labelsPurged, labels, nNodes * sizeof(int32_t) );
 	std::for_each( foldLabels, foldLabels + foldSize, [&]( int labId ){ labelsPurged[labId] = 0; } );
-	//for (uint32_t i = 0; i < nNodes; i++)
-	//	std::cout << labelsPurged[i] << " ";
-	//std::cout << std::endl;
-
 	// Di solito alle lambda non vanno passate tutte le variabili per referenza, ma quest volta è necessario
 	// affinché implicitamente venga passato "this" per accedere ad un membro della classe
 
@@ -413,22 +403,9 @@ void COSNet<nodeW, edgeW>::train( uint32_t currentFold ) {
 			j++;
 		}
 	}
-	//for (uint32_t i = 0; i < nNodes; i++)
-	//	std::cout << fullToRedux[i] << " ";
-	//std::cout << std::endl;
-	//for (uint32_t i = 0; i < nNodes; i++)
-	//	std::cout << reduxToFull[i] << " ";
-	//std::cout << std::endl;
 
 	// Occhio: queste funzioni allocano labelledPositions, unlabelledPositions, pos_neigh e neg_neigh
 	labUnlab( labelsPurged, nNodes, &labelledPositions, &labelledSize, &unlabelledPositions, &unlabelledSize );
-	std::cout << "labelledSize: " << labelledSize << std::endl;
-	//for (uint32_t i = 0; i < labelledSize; i++)
-	//	std::cout << labelledPositions[i] << " ";
-	//std::cout << std::endl;
-	//for (uint32_t i = 0; i < unlabelledSize; i++)
-	//	std::cout << unlabelledPositions[i] << " ";
-	//std::cout << std::endl;
 	netProjection( str->cumulDegs, str->neighs, str->edgeWeights, labelsPurged, labelledSize, labelledPositions, &pos_neigh, &neg_neigh );
 
 	std::unique_ptr<int32_t[]> tempLabs( new int32_t[labelledSize] );
@@ -445,10 +422,6 @@ void COSNet<nodeW, edgeW>::train( uint32_t currentFold ) {
 		newLabels[i] = (labelsPurged[i] == 1) ? sin( alpha ) : ((labelsPurged[i] == -1) ? -cos( alpha ) : 0);
 	}
 
-	//for (uint32_t i = 0; i < nNodes; i++)
-	//	std::cout << newLabels[i] << " ";
-	//std::cout << std::endl;
-
 	// modifica per regolarizzazione
 	float trainPosProp = numPositiveInFolds[currentFold] / (float)(nNodes - foldSize);
 	const float posState = (float)  sin( alpha );
@@ -459,12 +432,9 @@ void COSNet<nodeW, edgeW>::train( uint32_t currentFold ) {
 	const int h = foldSize;
 	regulWeight = 2.0f * eta * a * a;
 
-	//std::unique_ptr<float[]> threshold( new float[unlabelledSize] );
 	threshold = new float[unlabelledSize];
 	for (uint32_t i = 0; i < unlabelledSize; i++) {
-		//int grado = rGraph.getNetGraph()->deg[unlabelledPositions[i]];
-		//const int	* vicinato = rGraph.getNetGraph()->neigh[unlabelledPositions[i]];
-		//const float * pesiDeiVicini = rGraph.getNetGraph()->weight[unlabelledPositions[i]];
+
 		node_sz nodeIdx = str->cumulDegs[unlabelledPositions[i]];
 		node_sz grado = str->cumulDegs[unlabelledPositions[i] + 1] - nodeIdx;
 		const node   * vicinato = &(str->neighs[nodeIdx]);

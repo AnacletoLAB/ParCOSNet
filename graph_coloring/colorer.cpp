@@ -1,7 +1,3 @@
-/*
- * coloring.cpp
- */
-
 #include <iostream>
 #include <stdlib.h>
 #include <algorithm>
@@ -12,101 +8,6 @@
 #include "utils/timer.h"
 
 using namespace std;
-
-template<typename nodeW, typename edgeW>
-bool Colorer<nodeW,edgeW>::checkColoring() {
-	col_sz nCol = coloring->nCol;
-	GraphStruct<nodeW, edgeW>* str = graph->getStruct();
-	for (col c = 1; c <= nCol; c++) {
-		unsigned start = coloring->cumulSize[c-1];
-		unsigned c_size = coloring->classSize(c);
-		for (unsigned i = 0; i < c_size-1; i++)
-			for (unsigned j = i+1; j < c_size; j++) {
-				node u = coloring->colClass[start+j];
-				node v = coloring->colClass[start+i];
-				if (str->areNeighbor(v,u))
-					cout << "COLORING ERROR: nodes " << u << " and " << v << "have the same color " << c << endl;
-			}
-	}
-	return true;
-}
-
-
-template<typename nodeW, typename edgeW>
-ColoringGeedyCPU<nodeW,edgeW>::ColoringGeedyCPU( Graph<nodeW, edgeW>* g ) : Colorer<nodeW, edgeW>( g ) {
-	this->coloring = new Coloring();
-	this->name = "Greedy-CPU";
-}
-
-template<typename nodeW, typename edgeW>
-ColoringGeedyCPU<nodeW,edgeW>::~ColoringGeedyCPU() {
-	delete this->coloring;
-	delete[] this->meanClassDeg;
-}
-
-/**
- * Greedy First Fit algorithm for coloring building
- */
-template<typename nodeW, typename edgeW>
-void ColoringGeedyCPU<nodeW,edgeW>::run() {
-	Timer time;   // timer objects
-	time.startTime();
-	GraphStruct<nodeW, edgeW>* str = this->graph->getStruct();
-	node_sz n = str->nNodes;
-
-	// sort node idx based on node degrees
-	node_sz *buffDeg = new node_sz[n];
-	node *nodePerm = new node[n];
-	for (node i = 0; i < n; i++) {
-		buffDeg[i] = str->deg(i);
-		nodePerm[i] = i;
-	}
-	sort(nodePerm, nodePerm + n, [buffDeg](size_t k, size_t j) {return buffDeg[k] < buffDeg[j];});
-
-	// vector of vectors, i.e. color classes
-	vector< vector<col> > col_class {vector<col> {nodePerm[0]}};
-	int nCol = 1;
-	for (unsigned i = 1; i < n; i++) {
-		bool DONE_OUTER = false;
-		for (auto& c : col_class) {
-			bool DONE_INNER = true;
-			for (unsigned j = 0; j < c.size(); j++) {
-				if (str->areNeighbor(c.at(j), nodePerm[i])) {
-					DONE_INNER = false;
-					break;
-				}
-			}
-			if (DONE_INNER) {
-				DONE_OUTER = true;
-				c.push_back(nodePerm[i]);
-				break;
-			}
-		}
-		if (!DONE_OUTER) {
-			vector<col> c {nodePerm[i]};
-			col_class.push_back(c);
-			nCol++;
-		}
-	}
-
-	// fill the Coloring data structure
-	col* C = new col[n];
-	col color = 1;
-	for (vector< vector<col> >::iterator i = col_class.begin(); i != col_class.end(); ++i) {
-		for (vector<col>::iterator j = i->begin(); j != i->end(); ++j) {
-			C[*j] = color;
-		}
-		color++;
-	}
-	time.endTime();
-	this->elapsedTimeSec = time.duration();
-	this->buildColoring(C, n);
-
-	// clean
-	delete[] nodePerm;
-	delete[] buffDeg;
-	delete[] C;
-}
 
 /**
  * Build a Coloring for a graph
@@ -210,7 +111,102 @@ float Colorer<nodeW, edgeW>::efficiencyNumProcessors( unsigned nProc ) {
 	return E/(float)coloring->nCol;
 }
 
+template<typename nodeW, typename edgeW>
+bool Colorer<nodeW,edgeW>::checkColoring() {
+	col_sz nCol = coloring->nCol;
+	GraphStruct<nodeW, edgeW>* str = graph->getStruct();
+	for (col c = 1; c <= nCol; c++) {
+		unsigned start = coloring->cumulSize[c-1];
+		unsigned c_size = coloring->classSize(c);
+		for (unsigned i = 0; i < c_size-1; i++)
+			for (unsigned j = i+1; j < c_size; j++) {
+				node u = coloring->colClass[start+j];
+				node v = coloring->colClass[start+i];
+				if (str->areNeighbor(v,u))
+					cout << "COLORING ERROR: nodes " << u << " and " << v << "have the same color " << c << endl;
+			}
+	}
+	return true;
+}
+
+
+template<typename nodeW, typename edgeW>
+ColoringGreedyCPU<nodeW,edgeW>::ColoringGreedyCPU( Graph<nodeW, edgeW>* g ) : Colorer<nodeW, edgeW>( g ) {
+	this->coloring = new Coloring();
+	this->name = "Greedy-CPU";
+}
+
+template<typename nodeW, typename edgeW>
+ColoringGreedyCPU<nodeW,edgeW>::~ColoringGreedyCPU() {
+	delete this->coloring;
+	delete[] this->meanClassDeg;
+}
+
+/**
+ * Greedy First Fit algorithm for coloring building
+ */
+template<typename nodeW, typename edgeW>
+void ColoringGreedyCPU<nodeW,edgeW>::run() {
+	Timer time;   // timer objects
+	time.startTime();
+	GraphStruct<nodeW, edgeW>* str = this->graph->getStruct();
+	node_sz n = str->nNodes;
+
+	// sort node idx based on node degrees
+	node_sz *buffDeg = new node_sz[n];
+	node *nodePerm = new node[n];
+	for (node i = 0; i < n; i++) {
+		buffDeg[i] = str->deg(i);
+		nodePerm[i] = i;
+	}
+	sort(nodePerm, nodePerm + n, [buffDeg](size_t k, size_t j) {return buffDeg[k] < buffDeg[j];});
+
+	// vector of vectors, i.e. color classes
+	vector< vector<col> > col_class {vector<col> {nodePerm[0]}};
+	int nCol = 1;
+	for (unsigned i = 1; i < n; i++) {
+		bool DONE_OUTER = false;
+		for (auto& c : col_class) {
+			bool DONE_INNER = true;
+			for (unsigned j = 0; j < c.size(); j++) {
+				if (str->areNeighbor(c.at(j), nodePerm[i])) {
+					DONE_INNER = false;
+					break;
+				}
+			}
+			if (DONE_INNER) {
+				DONE_OUTER = true;
+				c.push_back(nodePerm[i]);
+				break;
+			}
+		}
+		if (!DONE_OUTER) {
+			vector<col> c {nodePerm[i]};
+			col_class.push_back(c);
+			nCol++;
+		}
+	}
+
+	// fill the Coloring data structure
+	col* C = new col[n];
+	col color = 1;
+	for (vector< vector<col> >::iterator i = col_class.begin(); i != col_class.end(); ++i) {
+		for (vector<col>::iterator j = i->begin(); j != i->end(); ++j) {
+			C[*j] = color;
+		}
+		color++;
+	}
+	time.endTime();
+	this->elapsedTimeSec = time.duration();
+	this->buildColoring(C, n);
+
+	// clean
+	delete[] nodePerm;
+	delete[] buffDeg;
+	delete[] C;
+}
+
 //// Questo serve per mantenere le dechiarazioni e definizioni in classi separate
 //// E' necessario aggiungere ogni nuova dichiarazione per ogni nuova classe tipizzata usata nel main
-template class ColoringGeedyCPU<col, col>;
-template class ColoringGeedyCPU<float, float>;
+template class ColoringGreedyCPU<col, col>;
+template class ColoringGreedyCPU<float, float>;

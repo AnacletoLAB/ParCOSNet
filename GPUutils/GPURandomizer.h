@@ -42,7 +42,6 @@ class GPURand {
 public:
 
 	GPURand( int n, long seed );
-	GPURand();
 	~GPURand();
 
 	int						num;

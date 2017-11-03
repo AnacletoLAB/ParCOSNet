@@ -18,18 +18,6 @@
 #include "hopfield_net/HopfieldNet.h"
 #include "GPUutils/GPURandomizer.h"
 
-
-/*
-#ifdef __linux__
-extern "C" {
-#include <R.h>
-#include <Rmath.h>
-#include <Rinternals.h>
-#include <R_ext/Rdynload.h>
-}
-#endif
-*/
-
 template<typename nodeW, typename edgeW>
 class COSNet {
 public:
@@ -60,7 +48,7 @@ public:
 
 	float						*	threshold;			// Allocato da COSNet::train()
 
-	float						*	pos_neigh;			// Allocato da netProjection
+	float						*	pos_neigh;			// Allocato da netP// TODO: rifare per supportare grafi non memorizzati in Unified Memoryrojection
 	float						*	neg_neigh;			// Allocato da netProjection
 
 	GraphStruct<nodeW, edgeW>	*	str;

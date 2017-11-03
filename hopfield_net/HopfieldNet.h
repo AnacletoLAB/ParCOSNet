@@ -20,9 +20,6 @@ using namespace std;
 typedef int unitIdx;      	// net unit index
 typedef float unitVal;      // net unit value
 
-
-//Struttura dove vengono memorizzati state e score della rete
-
 struct HopfState {
 	int				size;
 	unitVal		*	state;
@@ -30,23 +27,11 @@ struct HopfState {
 };
 
 
-
-/*
-#	#	#	#	#	#	#	#	#	#	#	#	#
-
-				HopfieldNet PARAMETERS
-
-#	#	#	#	#	#	#	#	#	#	#	#	#
-*/
-
-//tipo generico del grafo impostato a unitVal? va bene?
 template<typename nodeW, typename edgeW> class HopfieldNet {
 public:
 	HopfieldNet( const Graph<nodeW,edgeW> * const inGraph, const Coloring * const inCol, float inPosState, float inNegState, float inRegulWeight );
 	virtual ~HopfieldNet() /*= 0*/;
-
 	//virtual void run() = 0;
-
 
 	int				getNumIter() const;
 /*
@@ -83,72 +68,6 @@ public:
 	~HopfieldNetCPU();
 };
 
-
-/*
-#	#	#	#	#	#	#	#	#	#	#	#	#
-
-				HNetLog PARAMETERS
-
-#	#	#	#	#	#	#	#	#	#	#	#	#
-*/
-template<typename nodeW, typename edgeW>
-class HNetLog {
-
-public:
-	void setNetRunTimeCPU(double);
-	void setNetRunTimeGPU(double);
-	void setColRunTimeCPU(double);
-	void setColRunTimeGPU(double);
-	//void graphLog(const NetGraph * const);
-	void coloringLog( const Colorer<nodeW, edgeW>& );
-	void netRunLogCPU( const HopfieldNet<nodeW, edgeW>& );
-	void netRunLogGPU( const HopfieldNet<nodeW, edgeW>& );
-	void display();
-
-private:
-	bool verbose;          // print all (weights & IS cover)
-
-	// graph
-	int nUnit;             // num of units (neurons)
-	float netDensity;      // link density
-	float meanDegree;      // average node degree
-	float stdDegree;       // std node degree
-
-	// coloring
-	int numColorsCPU;      // num of colors
-	int numColorsGPU;      // size of the IS cover by GPU
-	float speedup;         // speedup CPU time/GPU time
-	float efficiency;      // measure of coloring efficiency
-
-	// H net
-	string stableState;    // tell if the final state is stable
-	float energyCPU;       // CPU final energy
-	float energyGPU;       // GPU final energy
-
-	// GPU memory
-	float totalGlobalMem;  // total amount device global memory
-	float reqGlobalMem;    // total amount device global memory req.
-
-	// iteration number
-	int numIterCPU;           // num of net updating - CPU
-	int numIterGPU;           // num of net updating - GPU
-
-	// running times
-	float netRunTimeCPU;
-	float netRunTimeGPU;
-	float colRunTimeCPU;
-	float colRunTimeGPU;
-};
-
-
-
-/*
-#	#	#	#	#	#	#	#	#	#	#	#	#
-
-				HopfieldNetGPU PARAMETERS
-
-#	#	#	#	#	#	#	#	#	#	#	#	#
-*/
 template<typename nodeW, typename edgeW>
 class HopfieldNetGPU : public HopfieldNet<nodeW, edgeW> {
 public:
@@ -184,7 +103,6 @@ protected:
 namespace HopfieldNetGPU_k {
 	template<typename nodeW, typename edgeW>
 	__global__ void updateIS_nodewise( float * const state, float * const score,
-		//const GraphStruct<nodeW, edgeW> * const graphStruct_d,
 		node_sz * cumulDegs, edgeW * edgeWeights, node * neighs_, nodeW * nodeTresholds,
 		const node_sz nNodes,
 		const uint32_t nCol, const uint32_t	* const colClass, const uint32_t * const cumulSize,
@@ -194,7 +112,6 @@ namespace HopfieldNetGPU_k {
 
 	template<typename nodeW, typename edgeW>
 	__global__ void updateIS_edgewise( float * const state, float * const score,
-		//const GraphStruct<nodeW, edgeW> * const graphStruct_d,
 		node_sz * cumulDegs, edgeW * edgeWeights, node * neighs_, nodeW * nodeTresholds,
 		const node_sz nNodes,
 		const Coloring * const col_d, const int colorIdx,

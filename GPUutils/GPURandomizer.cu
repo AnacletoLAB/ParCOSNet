@@ -80,8 +80,6 @@ void CPURand::discreteSampling(discreteDistribution dist, unsigned int* C, unsig
 	delete[] P;
 }
 
-GPURand::GPURand( ) {}
-
 GPURand::GPURand( int n, long seed ) : num( n ), seed( seed ) {
 
     // configuro la griglia e i blocchi

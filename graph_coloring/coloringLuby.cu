@@ -16,16 +16,6 @@
 #include "GPUutils/GPUStream.h"
 
 
-/*
-non ho considerato i template:
-typedef unsigned int node;     // graph node
-typedef unsigned long long int node_sz;  // graph node size
-
-e ho considerato nNodes come int
-coloring luby ha funzioni per cui funziona solo se nNodes è intero
-inserire il template + un controllo sul tipo di variabile nNodes?
-*/
-
 template<typename nodeW, typename edgeW>
 ColoringLuby<nodeW,edgeW>::ColoringLuby( Graph<nodeW,edgeW> * inGraph_d, curandState * randStates ) :
 	Colorer<nodeW,edgeW>( inGraph_d ),
@@ -161,7 +151,6 @@ void ColoringLuby<nodeW, edgeW>::convert_to_standard_notation(){
 	}
 #endif
 
-	//serve con la memoria unificata?
 	outColoring_d->nCol = numOfColors;
 	cuSts = cudaMalloc( (void**)&(outColoring_d->colClass), nnodes*sizeof(uint32_t) ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	cuSts = cudaMemcpy( outColoring_d->colClass, colClass, nnodes*sizeof(uint32_t), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
@@ -185,7 +174,6 @@ void ColoringLuby<nodeW, edgeW>::convert_to_standard_notation(){
 	}
 #endif
 
-	//delete?
 	delete[] colClass;
 	delete[] cumulSize;
 }

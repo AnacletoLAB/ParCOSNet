@@ -14,6 +14,17 @@
 #include "GPUutils/GPURandomizer.h"
 #include "GPUutils/GPUCudaCleaner.h"
 
+/*
+#ifdef __linux__
+extern "C" {
+#include <R.h>
+#include <Rmath.h>
+#include <Rinternals.h>
+#include <R_ext/Rdynload.h>
+}
+#endif
+*/
+
 // --data C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\string.yeast.v10.5.net.n1.tsv --label C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\yeast.go.ann.CC.6.june.17.stringID.atl5.tsv
 // --data C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\test.tsv --label C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\testLab.tsv
 
@@ -51,6 +62,8 @@ int main(int argc, char *argv[]) {
 
 	N = test.getStruct()->nNodes;
 
+	std::cout << "Classe: " << std::flush;
+
 	std::thread *tt = new std::thread[nThrd];
 	for (uint32_t i = 0; i < nThrd; ++i) {
 		tt[i] = std::thread( doMT<float,float>, i, nThrd, N, seed, test.getStruct(), &fImport );
@@ -69,7 +82,7 @@ void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, Grap
 
 		std::cout << cl << " " << std::flush;
 
-		GPURand curandGen( N, seed + thrdNum );	// Questo potrei portarlo fuori e creare un array di oggetti...
+		GPURand curandGen( N, seed + thrdNum );
 
 		// la graphStruct che passiamo a COSNet e' su CPU
 		COSNet<float, float> CN( N, test, &curandGen );
@@ -85,7 +98,7 @@ void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, Grap
 		// Ciclo sui fold
 		for (uint32_t currentFold = 0; currentFold < CN.numberOfFolds; currentFold++) {
 			CN.train( currentFold );
-//			CN.run();
+			CN.run();
 		}
 
 		// Eventuale salvataggio dei risultati; deve essere messo in sezione critica

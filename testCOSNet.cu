@@ -42,49 +42,42 @@ int main(int argc, char *argv[]) {
 	N = test.getStruct()->nNodes;
 
 	omp_set_num_threads( nThrd );
-	omp_lock_t labelLock;				// omp lock for the accumulation phase
+	omp_lock_t labelLock;
 	omp_init_lock( &labelLock );
-
-	GPURand * curandGen = new GPURand[nThrd];
-	for (uint32_t i = 0; i < omp_get_max_threads(); i++)
-		curandGen[i] = GPURand( N, seed );
 
 	std::cout << "classe: " << std::flush;
 	// Ciclo sulle classi contenute nel file...
-		#pragma omp parallel for default(none) shared(labelLock, fImport, test, std::cout, N, seed, curandGen)
-		for (uint32_t cl = 0; cl < fImport.nOfClasses; cl++) {
+	#pragma omp parallel for default(none) shared(labelLock, fImport, test, std::cout, N, seed, curandGen)
+	for (uint32_t cl = 0; cl < fImport.nOfClasses; cl++) {
 
-			std::cout << cl << " " << std::flush;
-			uint32_t thrnum = omp_get_thread_num();
+		std::cout << cl << " " << std::flush;
+		uint32_t thrnum = omp_get_thread_num();
 
-			//GPURand curandGen( N, seed );	// Questo potrei portarlo fuori e creare un array di oggetti...
+		GPURand curandGen( N, seed );
 
-			COSNet<float, float> CN( N, test.getStruct(), &curandGen[thrnum] );
+		COSNet<float, float> CN( N, test.getStruct(), &curandGen );
 
-			// In multithread, questa parte dovrebbe essere messa in sezione critica
-			omp_set_lock( &labelLock );
-				fImport.getNextLabelling();
-				CN.setLabels( fImport.labelsFromFile );
-			omp_unset_lock( &labelLock );
+		// In multithread, questa parte dovrebbe essere messa in sezione critica
+		omp_set_lock( &labelLock );
+			fImport.getNextLabelling();
+			CN.setLabels( fImport.labelsFromFile );
+		omp_unset_lock( &labelLock );
 
-			// estrae i fold
-			CN.prepare();
+		// estrae i fold
+		CN.prepare();
 
-			// Ciclo sui fold
-			for (uint32_t currentFold = 0; currentFold < CN.numberOfFolds; currentFold++) {
-				CN.train( currentFold );
-				CN.run();
-			}
-
-			// Eventuale salvataggio dei risultati; deve essere messo in sezione critica
-			// se volessi salvare tutto su un file
-			// {
-			//		fExport.save()
-			// }
-
+		// Ciclo sui fold
+		for (uint32_t currentFold = 0; currentFold < CN.numberOfFolds; currentFold++) {
+			CN.train( currentFold );
+			CN.run();
 		}
 
-
+		// Eventuale salvataggio dei risultati; deve essere messo in sezione critica
+		// se volessi salvare tutto su un file
+		// {
+		//		fExport.save()
+		// }
+	}
 
 	omp_destroy_lock( &labelLock );
 

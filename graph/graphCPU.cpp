@@ -2,12 +2,6 @@
 
 using namespace std;
 
-/**
- * Generate an Erdos random graph
- * @param n number of nodes
- * @param density probability of an edge (expected density)
- * @param eng seed
- */
 template<typename nodeW, typename edgeW>
 void Graph<nodeW, edgeW>::setup(node nn) {
 	if (GPUEnabled)
@@ -230,7 +224,6 @@ void Graph<nodeW, edgeW>::randGraphUnweighted(float prob,
 		setMemGPU(str->nEdges, GPUINIT_EDGES);
 	else
 		str->neighs = new node[str->nEdges] { };
-		// AP: str->neighs dove viene distrutto?
 
 	for (uint32_t i = 0; i < n; i++)
 		memcpy((str->neighs + str->cumulDegs[i]), edges[i].data(),

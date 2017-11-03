@@ -32,11 +32,6 @@ struct Coloring {
 	}
 };
 
-//enum class ColorerAlg {greedyCPU, LubyGPU, MCMCGPU};
-
-/**
- * Represents a coloring for a graph
- */
 template<typename nodeW, typename edgeW> class Colorer {
 public:
 	Colorer(Graph<nodeW,edgeW>* g) : graph{g} {
@@ -72,40 +67,15 @@ protected:
  *  Get a greedy colorings of a graph
  */
 template<typename nodeW, typename edgeW>
-class ColoringGeedyCPU: public Colorer<nodeW, edgeW> {
+class ColoringGreedyCPU: public Colorer<nodeW, edgeW> {
 public:
-	ColoringGeedyCPU( Graph<nodeW, edgeW>* g );
+	ColoringGreedyCPU( Graph<nodeW, edgeW>* g );
 	void run() /*override*/;
-	~ColoringGeedyCPU();
+	~ColoringGreedyCPU();
 };
 
 
-/*
-#	#	#	#	#	#	#	#	#	#	#	#	#
 
-				LUBY PARAMETERS
-
-#	#	#	#	#	#	#	#	#	#	#	#	#
-*/
-
-// Global kernels
-namespace ColoringLuby_k {
-
-	__global__ void prune_eligible( const int nnodes, const int * const coloring_d, bool *const cands_d );
-	__global__ void set_initial_distr_k( int nnodes, curandState * states, const bool * const cands_d, bool * const i_i_d );
-	template<typename nodeW, typename edgeW>
-	__global__ void check_conflicts_k( int nnodes, const node_sz * const cumulSize, const node * const neighs, bool * const i_i_d );
-	template<typename nodeW, typename edgeW>
-	__global__ void update_eligible_k( int nnodes, const node_sz * const cumulSize, const node * const neighs, const bool * const i_i_d, bool * const cands_d, bool * const is_d );
-	__global__ void check_finished_k( int nnodes, const bool * const cands_d, bool * const nodeLeft_d );
-	__global__ void add_color_and_check_uncolored_k( int nnodes, int numOfColors, const bool * const is_d, bool * const uncoloredNodes_d, int * const coloring_d );
-
-	template<typename nodeW, typename edgeW>
-	__global__ void print_graph_k( int nnodes, const node_sz * const cumulSize, const node * const neighs );
-	/*
-	__global__ void prune_eligible_clear_is( const int nnodes, const int * const coloring_d, bool *const cands_d, bool * const is_d );
-		*/
-};
 
 template<typename nodeW, typename edgeW>
 class ColoringLuby : public Colorer<nodeW, edgeW> {
@@ -154,4 +124,23 @@ protected:
 
 	void			convert_to_standard_notation();
 
+};
+
+// Global kernels
+namespace ColoringLuby_k {
+
+	__global__ void prune_eligible( const int nnodes, const int * const coloring_d, bool *const cands_d );
+	__global__ void set_initial_distr_k( int nnodes, curandState * states, const bool * const cands_d, bool * const i_i_d );
+	template<typename nodeW, typename edgeW>
+	__global__ void check_conflicts_k( int nnodes, const node_sz * const cumulSize, const node * const neighs, bool * const i_i_d );
+	template<typename nodeW, typename edgeW>
+	__global__ void update_eligible_k( int nnodes, const node_sz * const cumulSize, const node * const neighs, const bool * const i_i_d, bool * const cands_d, bool * const is_d );
+	__global__ void check_finished_k( int nnodes, const bool * const cands_d, bool * const nodeLeft_d );
+	__global__ void add_color_and_check_uncolored_k( int nnodes, int numOfColors, const bool * const is_d, bool * const uncoloredNodes_d, int * const coloring_d );
+
+	template<typename nodeW, typename edgeW>
+	__global__ void print_graph_k( int nnodes, const node_sz * const cumulSize, const node * const neighs );
+	/*
+	__global__ void prune_eligible_clear_is( const int nnodes, const int * const coloring_d, bool *const cands_d, bool * const is_d );
+		*/
 };
