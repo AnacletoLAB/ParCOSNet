@@ -80,7 +80,7 @@ void Graph<nodeW, edgeW>::setupImporterGPU() {
 	// Inizio con i cumulDegs
 	std::fill( temp_cumulDegs.get(), temp_cumulDegs.get() + (nn + 1), 0);
 	for (uint32_t i = 1; i < (nn + 1); i++)
-		temp_cumulDegs[i] += ( temp_cumulDegs[i - 1] + tempN[i - 1]->size() );
+		temp_cumulDegs[i] += ( temp_cumulDegs[i - 1] + (uint32_t)(tempN[i - 1]->size()) );
 
 	setMemGPU( str->nEdges, GPUINIT_EDGES );
 	setMemGPU( str->nEdges, GPUINIT_EDGEW );

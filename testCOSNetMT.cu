@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 
 	std::this_thread::yield();
 
-	for (int i = 0; i < nThrd; ++i)
+	for (uint32_t i = 0; i < nThrd; ++i)
 		tt[i].join();
 	delete[] tt;
 

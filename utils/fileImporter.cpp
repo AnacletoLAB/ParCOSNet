@@ -41,7 +41,7 @@ fileImporter::fileImporter( std::string graphFileName, std::string labelFileName
 		ss.clear();
 	}
 
-	nNodes = tempGeneNamesSet.size();
+	nNodes = (uint32_t) tempGeneNamesSet.size();
 
 	// Ora costruisco le mappe dirette e inverse
 	for (auto it = tempGeneNamesSet.begin(); it != tempGeneNamesSet.end(); ++it) {

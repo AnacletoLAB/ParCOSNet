@@ -219,7 +219,7 @@ void ArgHandle::processCommandLine() {
 	}
 
 	if (seed == 0) {
-		seed = time( NULL );
+		seed = (uint32_t) time( NULL );
 		std::cout << "\033[33;1mNo seed specified. Generating a random seed: " << seed << " (--seed).\033[0m" << std::endl;
 		srand( seed );
 	}

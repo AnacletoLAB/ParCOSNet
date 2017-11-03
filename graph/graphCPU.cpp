@@ -68,7 +68,7 @@ void Graph<nodeW, edgeW>::setupImporter() {
 	// Inizio con i cumulDegs
 	std::fill( str->cumulDegs, str->cumulDegs + (nn + 1), 0);
 	for (uint32_t i = 1; i < (nn + 1); i++)
-		str->cumulDegs[i] += ( str->cumulDegs[i - 1] + tempN[i - 1]->size() );
+		str->cumulDegs[i] += ( str->cumulDegs[i - 1] + (node_sz)(tempN[i - 1]->size()) );
 
 	str->neighs = new node[str->nEdges];
 	str->edgeWeights = new edgeW[str->nEdges];
@@ -261,4 +261,4 @@ void Graph<nodeW, edgeW>::print(bool verbose) {
 }
 
 template class Graph<float, float>;
-template class Graph<uint32_t, uint32_t>;
+//template class Graph<uint32_t, uint32_t>;
