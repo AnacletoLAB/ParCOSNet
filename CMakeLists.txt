@@ -46,6 +46,7 @@ SET(SOURCESCPP      "COSNet/COSNet.cpp"
 					"hopfield_net/HopfieldNet.cpp"
 					"utils/ArgHandle.cpp"
 					"utils/fileImporter.cpp"
+					"utils/fileExporter.cpp"
 					"utils/timer.cpp")
 SET(SOURCESCUDA     "GPUutils/GPUCudaCleaner.cu"
                 	"GPUutils/GPUStream.cu"
