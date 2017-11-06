@@ -483,7 +483,7 @@ void COSNet<nodeW, edgeW>::run() {
 	HN_d.run_nodewise();
 	//HN_d.normalizeScore( str, &reduxToFull );
 
-	//HN_d.returnVal( stateRedux.get(), scoreRedux.get() );
+	HN_d.returnVal( stateRedux.get(), scoreRedux.get() );
 	for (uint32_t i = 0; i < grafoRedux.getStruct()->nNodes; i++) {
 		states[reduxToFull[i]] = static_cast<double>(stateRedux[i]);
 		scores[reduxToFull[i]] = static_cast<double>(scoreRedux[i]);

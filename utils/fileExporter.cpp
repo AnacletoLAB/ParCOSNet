@@ -8,7 +8,8 @@ fileExporter::fileExporter( std::string outFileName, std::string geneFileName, s
 
 fileExporter::~fileExporter() {
 	outFile.close();
-	geneFile.close();
+	if (geneFile.is_open())
+		geneFile.close();
 }
 
 void fileExporter::saveGeneNames() {
@@ -30,15 +31,14 @@ void fileExporter::saveGeneNames() {
 template <typename nodeW, typename edgeW>
 void fileExporter::saveClass( const std::string & currentClassName, COSNet<nodeW, edgeW> * CN ) {
 	if (outFile.is_open()) {
-		outfile << currentClassName << "\t";
+		outFile << currentClassName << "\t";
 
 		uint32_t N = CN->nNodes;
 		for (uint32_t i = 0; i < N; i++) {
-
+			outFile << CN->scores[i] << "\t";
 		}
 
-
-
+		outFile << std::endl;
 	}
 }
 
