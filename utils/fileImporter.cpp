@@ -135,10 +135,12 @@ bool fileImporter::getNextEdge() {
 	return true;
 }
 
-void fileImporter::getNextLabelling() {
+void fileImporter::getNextLabelling( std::string & currentClassName ) {
 	nLabelsFromFile = 0;
 	// etichette tutte negative di default, modifico solo le positive
 	std::fill( labelsFromFile.begin(), labelsFromFile.end(), -1 );
+
+	bool classNameNotSet = true;
 
 	do {
 		if (inStr != "") {
@@ -147,6 +149,10 @@ void fileImporter::getNextLabelling() {
 			// questa, invece, modifica in "+1" le posizioni relative alle etichette positive
 			labelsFromFile[geneMap[geneIn]] = 1;
 			nLabelsFromFile++;
+			if (classNameNotSet) {
+				currentClassName = classIn;
+				classNameNotSet = false;
+			}
 		}
 		std::getline( labelFile, inStr );
 		if (!labelFile)

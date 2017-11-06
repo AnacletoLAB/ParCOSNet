@@ -5,6 +5,7 @@
 #include <mutex>
 #include "utils/ArgHandle.h"
 #include "utils/fileImporter.h"
+#include "utils/fileExporter.h"
 #include "utils/timer.h"
 #include "graph/graph.h"
 #include "graph/graphCPU.cpp"
@@ -30,9 +31,10 @@ extern "C" {
 // --data C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\test.tsv --label C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\testLab.tsv
 
 std::mutex g_labelLock;
+std::mutex g_saveLock;
 
 template<typename nodeW, typename edgeW>
-void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, GraphStruct<nodeW,edgeW> * test, fileImporter * fImport );
+void doMT( uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, GraphStruct<nodeW, edgeW> * test, fileImporter * fImport, fileExporter * fExport );
 
 int main(int argc, char *argv[]) {
 
@@ -49,6 +51,8 @@ int main(int argc, char *argv[]) {
 	std::string			graphFileName	= commandLine.dataFilename;
 	std::string			labelsFileName	= commandLine.labelFilename;
 	std::string			timeFileName	= commandLine.timeFilename;
+	std::string			outFileName		= commandLine.outFilename;
+	std::string			geneFileName	= commandLine.geneFilename;
 
 	bool GPUEnabled = 1;
 
@@ -62,13 +66,16 @@ int main(int argc, char *argv[]) {
 
 	N = test.getStruct()->nNodes;
 
+	fileExporter fExport( outFileName, geneFileName, &fImport.inverseGeneMap, N );
+	fExport.saveGeneNames();
+
 	std::cout << "Classe: " << std::flush;
 
 	ttimer.startTime();
 
 	std::thread *tt = new std::thread[nThrd];
 	for (uint32_t i = 0; i < nThrd; ++i) {
-		tt[i] = std::thread( doMT<float,float>, i, nThrd, N, seed, test.getStruct(), &fImport );
+		tt[i] = std::thread( doMT<float,float>, i, nThrd, N, seed, test.getStruct(), &fImport, &fExport );
 	}
 
 	std::this_thread::yield();
@@ -85,8 +92,10 @@ int main(int argc, char *argv[]) {
 }
 
 template<typename nodeW, typename edgeW>
-void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, GraphStruct<nodeW,edgeW> * test, fileImporter * fImport ) {
+void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, GraphStruct<nodeW,edgeW> * test, fileImporter * fImport, fileExporter * fExport ) {
 	for (uint32_t cl = thrdNum; cl < fImport->nOfClasses; cl += totThreads) {
+
+		std::string currentClassName;
 
 		std::cout << cl << " " << std::flush;
 
@@ -96,7 +105,7 @@ void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, Grap
 		COSNet<float, float> CN( N, test, &curandGen );
 
 		g_labelLock.lock();
-			fImport->getNextLabelling();
+			fImport->getNextLabelling( currentClassName );
 			CN.setLabels( fImport->labelsFromFile );
 		g_labelLock.unlock();
 
@@ -110,10 +119,8 @@ void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, Grap
 			CN.deallocateLabs();
 		}
 
-		// Eventuale salvataggio dei risultati; deve essere messo in sezione critica
-		// se volessi salvare tutto su un file
-		// {
-		//		fExport.save()
-		// }
+		g_saveLock.lock();
+			fExport->saveClass<float,float>( currentClassName, &CN );
+		g_saveLock.unlock();
 	}
 }

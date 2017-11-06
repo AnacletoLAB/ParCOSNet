@@ -15,7 +15,7 @@ public:
 
 	void 		fRewind();
 	bool		getNextEdge();
-	void		getNextLabelling();
+	void		getNextLabelling( std::string & currentClassName );
 	uint32_t	getNumberOfClasses();
 
 	std::ifstream graphFile;
