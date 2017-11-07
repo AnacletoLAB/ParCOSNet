@@ -83,7 +83,7 @@ public:
 	void 			clearInitState();
 	void 			setInitStateProb( Prob p, char type);
 	void 			setRandomInitState( GPURand * const randomizer );
-	void 			returnVal( double * const inState, double * const inScore );
+	void 			returnVal( float * const inState, float * const inScore );
 	//void			normalizeScore( const GraphStruct<nodeW, edgeW> * const bigGraph, const uint32_t *const reduxToFull );
 
 	const Graph<nodeW, edgeW> 		* const graph_d;

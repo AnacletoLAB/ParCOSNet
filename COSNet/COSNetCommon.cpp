@@ -5,7 +5,7 @@ template<typename nodeW, typename edgeW>
 COSNetCommon<nodeW,edgeW>::COSNetCommon( uint32_t nNodes, GraphStruct<nodeW, edgeW> * graph ) :
 		nNodes{ nNodes }, str{ graph } {
 
-	weightedDegree = new double[nNodes];
+	weightedDegree = new float[nNodes];
 }
 
 // TODO: rifare per supportare grafi non memorizzati in Unified Memory

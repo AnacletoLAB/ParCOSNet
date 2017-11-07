@@ -5,8 +5,8 @@ template<typename nodeW, typename edgeW>
 COSNet<nodeW, edgeW>::COSNet( uint32_t nNodes, GraphStruct<nodeW, edgeW> * graph, GPURand * GPURandGen ) :
 		nNodes{ nNodes }, str{ graph }, labelledPositions{ nullptr }, unlabelledPositions{ nullptr },
 		pos_neigh{ nullptr }, neg_neigh{ nullptr }, threshold{ nullptr }, GPURandGen{ GPURandGen } {
-	scores				= new double[nNodes];
-	states				= new double[nNodes];
+	scores				= new float[nNodes];
+	states				= new float[nNodes];
 	labels				= new int32_t[nNodes];
 
 	eta					= 3.5e-4f;
@@ -434,8 +434,8 @@ void COSNet<nodeW, edgeW>::train( uint32_t currentFold ) {
 
 	// modifica per regolarizzazione
 	float trainPosProp = numPositiveInFolds[currentFold] / (float)(nNodes - foldSize);
-	const float posState = (float)  sin( alpha );
-	const float negState = (float) -cos( alpha );
+	const float posState = sinf( alpha );
+	const float negState = -cosf( alpha );
 	const float a = 1.0f / (posState - negState);
 	const float b = negState / (negState - posState);
 	eta = beta * abs( tanf( (alpha - M_PI/4.0f) * 2.0f ) );
@@ -475,18 +475,22 @@ void COSNet<nodeW, edgeW>::run() {
 	ColoringLuby<nodeW, edgeW> colLuby( &grafoRedux, GPURandGen->randStates );
 	colLuby.run();
 
-	std::unique_ptr<double[]> stateRedux( new double[grafoRedux.getStruct()->nNodes] );
-	std::unique_ptr<double[]> scoreRedux( new double[grafoRedux.getStruct()->nNodes] );
+	std::unique_ptr<float[]> stateRedux( new float[grafoRedux.getStruct()->nNodes] );
+	std::unique_ptr<float[]> scoreRedux( new float[grafoRedux.getStruct()->nNodes] );
 
 	HopfieldNetGPU<nodeW, edgeW> HN_d( &grafoRedux, colLuby.getColoringGPU(), sin( alpha ), -cos( alpha ), regulWeight );
 	HN_d.clearInitState();
+	//HN_d.setInitState( sinf(alpha) );
+	//HN_d.run_edgewise();
 	HN_d.run_nodewise();
 	//HN_d.normalizeScore( str, &reduxToFull );
 
 	HN_d.returnVal( stateRedux.get(), scoreRedux.get() );
+	//std::for_each( stateRedux.get(), stateRedux.get() + grafoRedux.getStruct()->nNodes, [](float nn) {std::cout << nn << " ";} );
+	//getchar();
 	for (uint32_t i = 0; i < grafoRedux.getStruct()->nNodes; i++) {
-		states[reduxToFull[i]] = static_cast<double>(stateRedux[i]);
-		scores[reduxToFull[i]] = static_cast<double>(scoreRedux[i]);
+		states[reduxToFull[i]] = stateRedux[i];
+		scores[reduxToFull[i]] = scoreRedux[i];
 	}
 
 }

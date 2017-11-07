@@ -27,9 +27,8 @@ extern "C" {
 #endif
 */
 
-// --data C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\string.yeast.v10.5.net.n1.tsv --label C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\yeast.go.ann.CC.6.june.17.stringID.atl5.tsv
-// --data C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\test.tsv --label C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\testLab.tsv
-
+// --nThrd 1 --data C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\string.yeast.v10.5.net.n1.tsv --label C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\yeast.go.ann.CC.6.june.17.stringID.atl5.tsv --gene C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\gene.tsv --out C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\out.txt
+// --nThrd 1 --data C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\test.tsv --label C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\testLab.tsv --gene C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\gene.tsv --out C:\Users\User\Documents\Ricerca\datasets\COSNet\tsv_compressedLabels\out.txt
 std::mutex g_labelLock;
 std::mutex g_saveLock;
 

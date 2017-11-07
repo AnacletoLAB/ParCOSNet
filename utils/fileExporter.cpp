@@ -35,7 +35,7 @@ void fileExporter::saveClass( const std::string & currentClassName, COSNet<nodeW
 
 		uint32_t N = CN->nNodes;
 		for (uint32_t i = 0; i < N; i++) {
-			outFile << CN->scores[i] << "\t";
+			outFile << CN->states[i] << "\t";
 		}
 
 		outFile << std::endl;

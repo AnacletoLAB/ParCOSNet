@@ -30,8 +30,8 @@ public:
 	void deallocateLabs();
 
 	uint32_t						nNodes;
-	double						*	scores;
-	double						*	states;
+	float						*	scores;
+	float						*	states;
 
 	uint32_t						numberOfFolds;
 	uint32_t					*	folds;

@@ -17,8 +17,8 @@ public:
 	void calWeightedDegree();
 
 	uint32_t						nNodes;
-	double							sumOfDegree;
+	float							sumOfDegree;
 	GraphStruct<nodeW, edgeW>	* 	str;
-	double						*	weightedDegree;
+	float						*	weightedDegree;
 
 };
