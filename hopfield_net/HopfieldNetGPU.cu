@@ -151,7 +151,8 @@ __global__ void HopfieldNetGPU_k::updateIS_nodewise
 
 	float newScore = 0;
 
-	const int 			node   = colClass[colorIdx + tid];
+	const int 			offsetCol = cumulSize[colorIdx];						// offset per il coloring
+	const int 			node   = colClass[offsetCol + tid];
 	const int			offset = cumulDegs[node];
 	const int 			degree = cumulDegs[node + 1] - offset;
 	const edgeW * const weights = &(edgeWeights[offset]);
@@ -278,7 +279,7 @@ void HopfieldNetGPU<nodeW, edgeW>::run_edgewise() {
 #endif
 
 	// final state & log
-	cuSts = cudaMemcpy(this->hState.state, hState_d.state, this->hState.size * sizeof(int), cudaMemcpyDeviceToHost); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemcpy(this->hState.state, hState_d.state, this->hState.size * sizeof( unitVal ), cudaMemcpyDeviceToHost); cudaCheck( cuSts, __FILE__, __LINE__ );
 	//HL->GPUrunTime = milliseconds / 1000;
 	//HL->GPUnumIter = num_iter;
 	//HL->speedup = HL->runTime / HL->GPUrunTime;
@@ -456,13 +457,13 @@ void HopfieldNetGPU<nodeW, edgeW>::setInitStateProb( Prob p, char type ) {
 // ritorna i valori di state e score
 // serve perchè hState e hState_d sono campi protected
 template<typename nodeW, typename edgeW>
-void HopfieldNetGPU<nodeW, edgeW>::returnVal( double * const inState, double * const inScore ) {
+void HopfieldNetGPU<nodeW, edgeW>::returnVal( float * const inState, float * const inScore ) {
 	cudaError_t cuSts;
 	cuSts = cudaMemcpy(this->hState.state, hState_d.state, hState_d.size * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	cuSts = cudaMemcpy(this->hState.score, hState_d.score, hState_d.size * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	for (int i = 0; i < hState_d.size; i++) {
-		inState[i] = static_cast<double>( this->hState.state[i] );
-		inScore[i] = static_cast<double>( this->hState.score[i] );
+		inState[i] = this->hState.state[i];
+		inScore[i] = this->hState.score[i];
 	}
 }
 
