@@ -58,7 +58,9 @@ SET(SOURCESCUDA     "GPUutils/GPUCudaCleaner.cu"
 #					"testColoring_Benchmark.cu")
 #					"testCOSNet.cu")	# versione openmp
 					"testCOSNetMT.cu")	# versione std::thread
+SET(SOURCEGEN		"datasetGenerator.cpp")
 
 CUDA_ADD_EXECUTABLE(COSNet ${SOURCESCUDA} ${SOURCESCPP})
+add_executable(datasetGen ${SOURCEGEN})
 
 target_link_libraries(COSNet    ${CUDA_LIBRARIES} "/usr/local/cuda/lib64/libcudadevrt.a" ${CUDA_curand_LIBRARY})
