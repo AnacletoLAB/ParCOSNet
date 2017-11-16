@@ -116,8 +116,8 @@ void ColoringLuby<nodeW, edgeW>::convert_to_standard_notation(){
 
 		cumulSize[c+1]=idx;
 	}
-
-	/*for (uint32_t i = 0; i < nnodes; i++)
+/*
+	for (uint32_t i = 0; i < nnodes; i++)
 		std::cout << coloring_h[i] << " ";
 	std::cout << std::endl;
 
@@ -133,14 +133,14 @@ void ColoringLuby<nodeW, edgeW>::convert_to_standard_notation(){
 			std::cout << colClass[j] << " ";
 		}
 		std::cout << std::endl;
-	}*/
-
+	}
+*/
 #ifdef TESTCOLORINGCORRECTNESS
 	std::cout << "Test colorazione attivato!" << std::endl;
 	std::unique_ptr<node_sz[]> temp_cumulDegs( new node_sz[graphStruct_d->nNodes + 1]);
 	std::unique_ptr<node[]>  temp_neighs( new node[graphStruct_d->nEdges] );
-	cudaMemcpy( temp_cumulDegs.get(), graphStruct_d->cumulDegs, (graphStruct_d->nNodes + 1) * sizeof(node_sz), cudaMemcpyDeviceToHost );
-	cudaMemcpy( temp_neighs.get(),    graphStruct_d->neighs,    graphStruct_d->nEdges * sizeof(node_sz), cudaMemcpyDeviceToHost );
+	cuSts = cudaMemcpy( temp_cumulDegs.get(), graphStruct_d->cumulDegs, (graphStruct_d->nNodes + 1) * sizeof(node_sz), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemcpy( temp_neighs.get(),    graphStruct_d->neighs,    graphStruct_d->nEdges * sizeof(node_sz), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
 	for (uint32_t i = 0; i < numOfColors; i++) {
 		uint32_t ISsize = cumulSize[i + 1] - cumulSize[i];
@@ -259,6 +259,7 @@ __global__ void ColoringLuby_k::check_conflicts_k( int nnodes, const node_sz * c
 			// (forse?)
 			if ((deg_i <= neigh_ijDeg) /*&& (neigh_ij >= idx)*/) {
 				i_i_d[idx] = 0;
+				//break;
 			} else {
 				i_i_d[neigh_ij] = 0;
 			}
@@ -524,6 +525,12 @@ void ColoringLuby<nodeW,edgeW>::run() {
 	//std::cout << "ecco3: " << cudaGetErrorName( cudaGetLastError() ) << std::endl;
 
 }
+
+
+
+
+////////////////////////////////
+
 
 
 

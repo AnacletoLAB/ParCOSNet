@@ -35,6 +35,8 @@ SET(CUDA_NON_PROPAGATED_HOST_FLAGS ON)
 
 FIND_PACKAGE(CUDA REQUIRED QUIET)
 
+
+
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3")
 ## Debug!
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O0 -g")
@@ -54,6 +56,7 @@ SET(SOURCESCUDA     "GPUutils/GPUCudaCleaner.cu"
                 	"GPUutils/GPURandomizer.cu"
 					"graph/graphGPU.cu"
                 	"graph_coloring/coloringLuby.cu"
+					"graph_coloring/coloringLubyFast.cu"
 					"hopfield_net/HopfieldNetGPU.cu"
 #					"testColoring_Benchmark.cu")
 #					"testCOSNet.cu")	# versione openmp
@@ -64,3 +67,6 @@ CUDA_ADD_EXECUTABLE(COSNet ${SOURCESCUDA} ${SOURCESCPP})
 add_executable(datasetGen ${SOURCEGEN})
 
 target_link_libraries(COSNet    ${CUDA_LIBRARIES} "/usr/local/cuda/lib64/libcudadevrt.a" ${CUDA_curand_LIBRARY})
+
+# ssh apetrini@login.pico.cineca.it
+# qsub -A LI08s_HPCSoMuC -I -l select=1:ncpus=2:mpiprocs=2 -q bigmem -- /bin/bash

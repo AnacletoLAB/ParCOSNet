@@ -86,6 +86,7 @@ public:
 	~ColoringLuby();
 
 	void			run();
+	void			run_fast();
 
 	Coloring	*	getColoringGPU();
 
@@ -140,7 +141,14 @@ namespace ColoringLuby_k {
 
 	template<typename nodeW, typename edgeW>
 	__global__ void print_graph_k( int nnodes, const node_sz * const cumulSize, const node * const neighs );
-	/*
+
+	//template<typename nodeW, typename edgeW>
+	__global__ void fast_colorer_k( int nnodes, const node_sz * const cumulSize, const node * const neighs, curandState * randStates,
+	bool * const uncolored_d, bool * const nodeLeft_d, bool * const i_i_d, bool * const is_d, bool * const cands_d,	int * const numOfColors_d,
+	int * const coloring_d );
+
 	__global__ void prune_eligible_clear_is( const int nnodes, const int * const coloring_d, bool *const cands_d, bool * const is_d );
-		*/
+	__global__ void check_conflicts_fast_k( int nnodes, const node_sz * const cumulSize, const node * const neighs, bool * const i_i_d );
+	__global__ void update_eligible_fast_k( int nnodes, const node_sz * const cumulSize, const node * const neighs, const bool * const i_i_d, bool * const cands_d, bool * const is_d );
+
 };

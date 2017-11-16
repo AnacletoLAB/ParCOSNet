@@ -473,7 +473,8 @@ void COSNet<nodeW, edgeW>::run() {
 	Graph<nodeW, edgeW> grafoRedux( unlabelledPositions, unlabelledSize, labelsPurged, str, fullToRedux, reduxToFull, threshold, true );
 
 	ColoringLuby<nodeW, edgeW> colLuby( &grafoRedux, GPURandGen->randStates );
-	colLuby.run();
+	//colLuby.run();
+	colLuby.run_fast();
 
 	std::unique_ptr<float[]> stateRedux( new float[grafoRedux.getStruct()->nNodes] );
 	std::unique_ptr<float[]> scoreRedux( new float[grafoRedux.getStruct()->nNodes] );
@@ -481,8 +482,8 @@ void COSNet<nodeW, edgeW>::run() {
 	HopfieldNetGPU<nodeW, edgeW> HN_d( &grafoRedux, colLuby.getColoringGPU(), sin( alpha ), -cos( alpha ), regulWeight );
 	HN_d.clearInitState();
 	//HN_d.setInitState( sinf(alpha) );
-	//HN_d.run_edgewise();
-	HN_d.run_nodewise();
+	HN_d.run_edgewise();
+	//HN_d.run_nodewise();
 	//HN_d.normalizeScore( str, &reduxToFull );
 
 	HN_d.returnVal( stateRedux.get(), scoreRedux.get() );
