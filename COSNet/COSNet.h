@@ -27,6 +27,7 @@ public:
 	void prepare();
 	void train( uint32_t currentFold );
 	void run();
+	void runCPU();
 	void deallocateLabs();
 
 	uint32_t						nNodes;

@@ -526,6 +526,30 @@ void COSNet<nodeW, edgeW>::deallocateLabs() {
 	}
 }
 
+template<typename nodeW, typename edgeW>
+void COSNet<nodeW, edgeW>::runCPU() {
+	// Costruttore grafo ridotto SU CPU!
+	Graph<nodeW, edgeW> grafoRedux( unlabelledPositions, unlabelledSize, labelsPurged, str, fullToRedux, reduxToFull, threshold, false );
+
+	std::unique_ptr<float[]> stateRedux( new float[grafoRedux.getStruct()->nNodes] );
+	std::unique_ptr<float[]> scoreRedux( new float[grafoRedux.getStruct()->nNodes] );
+
+	HopfieldNetCPU<nodeW, edgeW> HN( &grafoRedux, sin( alpha ), -cos( alpha ), regulWeight );
+	HN.clearInitState();
+	//HN_d.setInitState( sinf(alpha) );
+	HN.run();
+	//HN_d.run_nodewise();
+	//HN_d.normalizeScore( str, &reduxToFull );
+
+	HN.returnVal( stateRedux.get(), scoreRedux.get() );
+	//std::for_each( stateRedux.get(), stateRedux.get() + grafoRedux.getStruct()->nNodes, [](float nn) {std::cout << nn << " ";} );
+	//getchar();
+	for (uint32_t i = 0; i < grafoRedux.getStruct()->nNodes; i++) {
+		states[reduxToFull[i]] = stateRedux[i];
+		scores[reduxToFull[i]] = scoreRedux[i];
+	}
+}
+
 
 //template class COSNet<uint32_t, uint32_t>;
 template class COSNet<float, float>;

@@ -119,9 +119,10 @@ void Graph<nodeW, edgeW>::setupRedux( const uint32_t * const unlabelled, const u
 	GraphStruct<nodeW, edgeW> * const fullGraphStruct, const uint32_t * const f2R, const uint32_t * const r2F, const float * const thresholds ) {
 
 	str = new GraphStruct<nodeW, edgeW>;
-	str->cumulDegs = new node_sz[str->nNodes + 1];
 	str->nNodes = unlabSize;
 	str->nEdges = 0;
+	str->cumulDegs = new node_sz[str->nNodes + 1];
+
 
 	std::fill( str->cumulDegs, str->cumulDegs + str->nNodes + 1, 0 );
 

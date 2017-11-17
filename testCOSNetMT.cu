@@ -115,6 +115,7 @@ void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, Grap
 		for (uint32_t currentFold = 0; currentFold < CN.numberOfFolds; currentFold++) {
 			CN.train( currentFold );
 			CN.run();
+			//CN.runCPU();
 			CN.deallocateLabs();
 		}
 

@@ -34,11 +34,11 @@ public:
 	//virtual void run() = 0;
 
 	int				getNumIter() const;
+	float			getEnergy();
 /*
 	HopfState	*	getState() const;
 	void			permRunOrder();
 	void			permRunColorOrder();
-	float			getEnergy();
 	void			checkStableState();
 	string			isStableState() const;
 	void			display();*/
@@ -46,7 +46,7 @@ public:
 protected:
 	const Graph<nodeW, edgeW> 			* const graph;
 	const Coloring						* const col;
-	HopfState							hState{};
+	HopfState 							hState{};
 	float								posState{0};
 	float								negState{0};
 
@@ -63,8 +63,10 @@ protected:
 template<typename nodeW, typename edgeW>
 class HopfieldNetCPU : public HopfieldNet<nodeW, edgeW> {
 public:
-	HopfieldNetCPU( const Graph<nodeW,edgeW> * const inGraph, const Coloring * const inCol, float inPosState, float inNegState, float inRegulWeight );
+	HopfieldNetCPU( const Graph<nodeW,edgeW> * const inGraph, float inPosState, float inNegState, float inRegulWeight );
 	void run();
+	void clearInitState();
+	void returnVal( float * const inState, float * const inScore );
 	~HopfieldNetCPU();
 };
 

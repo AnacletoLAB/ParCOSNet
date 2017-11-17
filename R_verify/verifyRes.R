@@ -1,7 +1,7 @@
 library(HEMDAG)
-origLabs <- get(load("/home/frasca/BMC_SI_BITS17_vanillaCODE/yeast.go.ann.CC.6.june.17.stringID.atl5.rda"))
+origLabs <- get(load("/home/frasca/BMC_SI_BITS17_vanillaCODE/mouse.go.ann.CC.6.june.17.stringID.atl5.rda"))
 
-a <- read.table("/home/alessandro/dev/src/COSNet/build/outYeast.txt",stringsAsFactors=F)
+a <- read.table("/home/alessandro/dev/src/COSNet/build/output.txt",stringsAsFactors=F)
 d <- readLines("/home/alessandro/dev/src/COSNet/build/geneNames.txt")
 
 # Preprazione matrice degli score
