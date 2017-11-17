@@ -165,19 +165,19 @@ __global__ void HopfieldNetGPU_k::updateIS_nodewise
 	__syncthreads(); // Non dovrebbe servire
 
 	// modifica per regolarizzazione
-	// int nodoreg;
-	// for (int i = 0; i < /*col_d->*/nCol; i++) {
-	// 	if (i == colorIdx)
-	// 		continue;
-	// 	else {
-	// 		int IS_size = /*col_d->*/cumulSize[i + 1] - /*col_d->*/cumulSize[i];
-	// 		for (int k = 0; k < IS_size; k++) {
-	// 			nodoreg = /*col_d->*/colClass[/*col_d->*/cumulSize[i] + k];
-	// 			newScore -= state[nodoreg] * regulWeight;
-	// 		}
-	// 	}
-	// }
-	// __syncthreads();
+	uint32_t nodoreg;
+	for (uint32_t i = 0; i < nCol; i++) {
+		if (i == colorIdx)
+			continue;
+		else {
+			uint32_t IS_size = cumulSize[i + 1] - cumulSize[i];
+			for (uint32_t k = 0; k < IS_size; k++) {
+				nodoreg = colClass[cumulSize[i] + k];
+				newScore -= state[nodoreg] * regulWeight;
+			}
+		}
+	}
+	__syncthreads();
 
 	score[node] = newScore - nodeThresholds[node];
 	state[node] = SIGNTH( (newScore - nodeThresholds[node]) );
@@ -476,57 +476,60 @@ void HopfieldNetGPU<nodeW, edgeW>::returnVal( float * const inState, float * con
 
 #	#	#	#	#	#	#	#	#	#	#	#	#
 */
-/*
+
 template<typename nodeW, typename edgeW>
 void HopfieldNetGPU<nodeW, edgeW>::normalizeScore( const GraphStruct<nodeW, edgeW> * const bigGraph, const uint32_t *const reduxToFull ) {
 	cudaError_t cuSts;
-	int n = graph_d->getStruct()->nNodes;
-	int nOrig = bigGraph->nNodes;
+	uint32_t n = graph_d->getStruct()->nNodes;
+	uint32_t nOrig = bigGraph->nNodes;
 	dim3 threadPerBlk( TPB_ACCUMUL, 1, 1 );
-	int bPg = (n + 2 * threadPerBlk.x - 1) / (2 * threadPerBlk.x);
+	uint32_t bPg = (n + 2 * threadPerBlk.x - 1) / (2 * threadPerBlk.x);
 	dim3 blocksPerGrd( bPg, 1, 1 );
 
-	unitVal	*	accumulatedScores;
-	int		*	indexes;
-	unitVal	*	sumOfWghs;
+	unitVal		*	accumulatedScores;
+	uint32_t	*	indexes;
+	unitVal		*	sumOfWghs;
 	cuSts = cudaMalloc( (void**)&accumulatedScores, bPg * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	cuSts = cudaMalloc( (void**)&indexes, n * sizeof( int ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMalloc( (void**)&indexes, n * sizeof( uint32_t ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	cuSts = cudaMalloc( (void**)&sumOfWghs, nOrig * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	std::unique_ptr<unitVal[]> accumulatedScores_h( new unitVal[bPg] );
-	std::unique_ptr<int[]>   indexes_h( new int[n] );
-	std::unique_ptr<unitVal[]> sumOfWghs_h( new unitVal[nOrig] );
+	std::unique_ptr<unitVal[]> 		accumulatedScores_h( new unitVal[bPg] );
+	std::unique_ptr<uint32_t[]>   	indexes_h( new uint32_t[n] );
+	std::unique_ptr<unitVal[]> 		sumOfWghs_h( new unitVal[nOrig] );
 
 	//HopfieldNetGPU_k::accumulateDegAndScores <<<blocksPerGrd, threadPerBlk>>> ( n, graph->deg, hState_d.score, accumulatedDeg, accumulatedScores );
 	// Calcolo somma degli scores
-	HopfieldNetGPUCompr_k::accumulateScores <<<blocksPerGrd, threadPerBlk>>> ( n, hState_d.score, accumulatedScores );
+	HopfieldNetGPU_k::accumulateScores <<<blocksPerGrd, threadPerBlk>>> ( n, hState_d.score, accumulatedScores );
 	if (cudaGetLastError() != cudaSuccess) { std::cout << "CUDA ERROR: HopfieldNetGPUCompr_k::accumulateScores" << std::endl; abort(); }			// DEBUG
 
 	// Calcolo somma dei pesi per ogni nodo del grafo originale
-	for (int j = 0; j < nOrig; j++) {
-		sumOfWghs_h[j] = std::accumulate(bigGraph->weight[j], bigGraph->weight[j] + bigGraph->deg[j], 0.0);
+	for (uint32_t j = 0; j < nOrig; j++) {
+		//sumOfWghs_h[j] = std::accumulate(bigGraph->edgeWeights[j], bigGraph->edgeWeights[j] + (bigGraph->cumulDegs[j+1] - bigGraph->cumulDegs[j]), 0.0);
+		sumOfWghs_h[j] = 0;
+		for (uint32_t k = bigGraph->cumulDegs[j]; k < bigGraph->cumulDegs[j+1]; k++)
+			sumOfWghs_h[j] += bigGraph->edgeWeights[k];
 	}
 
-	int i = 0;
-	for_each( indexes_h.get(), indexes_h.get() + n, [reduxToFull, &i]( int &val ) {val = reduxToFull->at( i++ ); });
+	uint32_t i = 0;
+	for_each( indexes_h.get(), indexes_h.get() + n, [reduxToFull, &i]( uint32_t &val ) {val = reduxToFull[i++]; } );
 	// ora indexes_h contiene la mappa reduxToFull per ogni nodo del grafo unlabelled
 
 	// accumulazione della somma dei pesi dei nodi unlabelled
 	float accumulatedWDeg = 0.0;
-	for (int j = 0; j < n; j++) {
+	for (uint32_t j = 0; j < n; j++) {
 		accumulatedWDeg += sumOfWghs_h[indexes_h[j]];
 	}
 	cudaDeviceSynchronize();
 
 	cuSts = cudaMemcpy( accumulatedScores_h.get(), accumulatedScores, bPg * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	cuSts = cudaMemcpy( sumOfWghs, sumOfWghs_h.get(), nOrig * sizeof( unitVal ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	cuSts = cudaMemcpy( indexes, indexes_h.get(), n * sizeof( int ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemcpy( indexes, indexes_h.get(), n * sizeof( uint32_t ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
 	// finisco l'accumulazione di deg e score su CPU
 	unitVal totScore = std::accumulate( accumulatedScores_h.get(), accumulatedScores_h.get() + bPg, 0.0 );
 
 	bPg = (n + threadPerBlk.x - 1) / threadPerBlk.x;
 	blocksPerGrd = dim3( bPg, 1, 1 );
-	HopfieldNetGPUCompr_k::normalizeScores <<<blocksPerGrd, threadPerBlk>>> ( n, accumulatedWDeg, totScore, sumOfWghs, indexes, hState_d.score );
+	HopfieldNetGPU_k::normalizeScores <<<blocksPerGrd, threadPerBlk>>> ( n, accumulatedWDeg, totScore, sumOfWghs, indexes, hState_d.score );
 	if (cudaGetLastError() != cudaSuccess) { std::cout << "CUDA ERROR: HopfieldNetGPUCompr_k::normalizeScores" << std::endl; abort(); }			// DEBUG
 
 	cuSts = cudaMemcpy( sumOfWghs_h.get(), sumOfWghs, nOrig * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
@@ -536,28 +539,27 @@ void HopfieldNetGPU<nodeW, edgeW>::normalizeScore( const GraphStruct<nodeW, edge
 	cuSts = cudaFree( indexes ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	cuSts = cudaFree( accumulatedScores ); cudaCheck( cuSts, __FILE__, __LINE__ );
 }
-*/
 
-/*
-__global__ void HopfieldNetGPU_k::accumulateScores( const int unlab, const unitVal * const scores,
-	unitVal * const accumScores ) {
+
+
+__global__ void HopfieldNetGPU_k::accumulateScores( const uint32_t unlab, const unitVal * const scores, unitVal * const accumScores ) {
 
 	__shared__ float tempScores[TPB_ACCUMUL];
 
-	int tid = blockDim.x * blockIdx.x + threadIdx.x;
+	uint32_t tid = blockDim.x * blockIdx.x + threadIdx.x;
 	if (tid >= unlab / 2)
 		return;
-	int baseBlock = 2 * blockDim.x * blockIdx.x;
+	uint32_t baseBlock = 2 * blockDim.x * blockIdx.x;
 	tempScores[threadIdx.x] = fabsf(scores[baseBlock + threadIdx.x]);
 	__syncthreads();
 
-	int incremento = ((baseBlock + threadIdx.x + blockDim.x) < unlab) ? blockDim.x : (unlab % blockDim.x) / 2;
+	uint32_t incremento = ((baseBlock + threadIdx.x + blockDim.x) < unlab) ? blockDim.x : (unlab % blockDim.x) / 2;
 	tempScores[threadIdx.x] += fabsf(scores[baseBlock + threadIdx.x + incremento]);
 	__syncthreads();
 
 	// ahah! Non capisco un cazzo!
 #pragma unroll
-	for (unsigned int i = blockDim.x / 2; i > 0; i >>= 1) {
+	for (uint32_t i = blockDim.x / 2; i > 0; i >>= 1) {
 		if ((threadIdx.x < i) & (tid + i < unlab / 2)){
 			tempScores[threadIdx.x] += tempScores[threadIdx.x + i];
 		}
@@ -574,13 +576,13 @@ __global__ void HopfieldNetGPU_k::accumulateScores( const int unlab, const unitV
 	accumScores[blockIdx.x] = tempScores[0];
 
 	return;
-}*/
+}
 
-/*
-__global__ void HopfieldNetGPU_k::normalizeScores( const int unlab, const float accumWDeg, const unitVal accumScores,
-	const unitVal * const sumOfWeights, const int * const indexes, unitVal * const scores ) {
 
-	int tid = blockDim.x * blockIdx.x + threadIdx.x;
+__global__ void HopfieldNetGPU_k::normalizeScores( const uint32_t unlab, const float accumWDeg, const unitVal accumScores,
+	const unitVal * const sumOfWeights, const uint32_t * const indexes, unitVal * const scores ) {
+
+	uint32_t tid = blockDim.x * blockIdx.x + threadIdx.x;
 	if (tid >= unlab)
 		return;
 
@@ -588,7 +590,7 @@ __global__ void HopfieldNetGPU_k::normalizeScores( const int unlab, const float 
 
 	return;
 }
-*/
+
 
 
 //// Questo serve per mantenere le dechiarazioni e definizioni in classi separate

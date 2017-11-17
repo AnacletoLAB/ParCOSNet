@@ -9,7 +9,7 @@ COSNet<nodeW, edgeW>::COSNet( uint32_t nNodes, GraphStruct<nodeW, edgeW> * graph
 	states				= new float[nNodes];
 	labels				= new int32_t[nNodes];
 
-	eta					= 3.5e-4f;
+	eta					= 2.5e-4f;
 	beta				= eta;
 
 	numberOfFolds		= 5;
@@ -482,9 +482,9 @@ void COSNet<nodeW, edgeW>::run() {
 	HopfieldNetGPU<nodeW, edgeW> HN_d( &grafoRedux, colLuby.getColoringGPU(), sin( alpha ), -cos( alpha ), regulWeight );
 	HN_d.clearInitState();
 	//HN_d.setInitState( sinf(alpha) );
-	HN_d.run_edgewise();
-	//HN_d.run_nodewise();
-	//HN_d.normalizeScore( str, &reduxToFull );
+	//HN_d.run_edgewise();
+	HN_d.run_nodewise();
+	HN_d.normalizeScore( str, reduxToFull );
 
 	HN_d.returnVal( stateRedux.get(), scoreRedux.get() );
 	//std::for_each( stateRedux.get(), stateRedux.get() + grafoRedux.getStruct()->nNodes, [](float nn) {std::cout << nn << " ";} );

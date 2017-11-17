@@ -86,7 +86,7 @@ public:
 	void 			setInitStateProb( Prob p, char type);
 	void 			setRandomInitState( GPURand * const randomizer );
 	void 			returnVal( float * const inState, float * const inScore );
-	//void			normalizeScore( const GraphStruct<nodeW, edgeW> * const bigGraph, const uint32_t *const reduxToFull );
+	void			normalizeScore( const GraphStruct<nodeW, edgeW> * const bigGraph, const uint32_t *const reduxToFull );
 
 	const Graph<nodeW, edgeW> 		* const graph_d;
 	const Coloring					* const col_d;
@@ -120,9 +120,9 @@ namespace HopfieldNetGPU_k {
 		const int colorIdx,
 		bool * const modified_d,
 		const float posState, const float negState );
-	/*
-	__global__ void accumulateScores( const int unlab, const unitVal * const scores,
+
+	__global__ void accumulateScores( const uint32_t unlab, const unitVal * const scores,
 			unitVal * const accumScores );
-	__global__ void normalizeScores( const int unlab, const float accumWDeg, const unitVal accumScores,
-			const unitVal * const sumOfWeights, const int * const indexes, unitVal * const scores );*/
+	__global__ void normalizeScores( const uint32_t unlab, const float accumWDeg, const unitVal accumScores,
+			const unitVal * const sumOfWeights, const uint32_t * const indexes, unitVal * const scores );
 }
