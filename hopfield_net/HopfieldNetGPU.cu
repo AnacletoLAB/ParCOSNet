@@ -533,15 +533,15 @@ void HopfieldNetGPU<nodeW, edgeW>::normalizeScore( const GraphStruct<nodeW, edge
 	// finisco l'accumulazione degli score su CPU
 	unitVal totScore = std::accumulate( accumulatedScores_h.get(), accumulatedScores_h.get() + bPg, 0.0 );
 
-			unitVal * temphStateScores = new unitVal[n];
-			cuSts = cudaMemcpy( temphStateScores, hState_d.score, n * sizeof( unitVal ), cudaMemcpyDeviceToHost );
-			unitVal tempAccScores = 0.0f;
-			std::for_each( temphStateScores, temphStateScores + n, [&tempAccScores]( unitVal nn ) {tempAccScores += fabs( nn ); } );
-			if (totScore != tempAccScores) {
-				std::cout << "errore nella reduction sugli score. GPU = " << totScore << " - CPU: " << tempAccScores << std::endl;
-				abort();
-			}
-			delete[] temphStateScores;
+			//unitVal * temphStateScores = new unitVal[n];
+			//cuSts = cudaMemcpy( temphStateScores, hState_d.score, n * sizeof( unitVal ), cudaMemcpyDeviceToHost );
+			//unitVal tempAccScores = 0.0f;
+			//std::for_each( temphStateScores, temphStateScores + n, [&tempAccScores]( unitVal nn ) {tempAccScores += fabs( nn ); } );
+			//if (totScore != tempAccScores) {
+			//	std::cout << "errore nella reduction sugli score. GPU = " << totScore << " - CPU: " << tempAccScores << std::endl;
+			//	abort();
+			//}
+			//delete[] temphStateScores;
 
 	bPg = (n + threadPerBlk.x - 1) / threadPerBlk.x;
 	blocksPerGrd = dim3( bPg, 1, 1 );

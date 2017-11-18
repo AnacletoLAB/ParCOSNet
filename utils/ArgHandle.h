@@ -21,8 +21,10 @@ public:
 	std::string		foldFilename;
 	std::string		labelFilename;
 	std::string		outFilename;
-	std::string		geneFilename;
-	std::string		timeFilename;
+	std::string		geneOutFilename;
+	std::string		statesOutFilename;
+	std::string		foldsOutFilename;
+	std::string		timeOutFilename;
 
 	uint32_t		m;
 	uint32_t		n;

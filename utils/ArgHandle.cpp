@@ -4,7 +4,8 @@
 #include <getopt.h>
 
 ArgHandle::ArgHandle( int argc, char **argv ) :
-		dataFilename( "" ), foldFilename( "" ), labelFilename( "" ), outFilename( "" ), geneFilename( "" ), timeFilename( "" ),
+		dataFilename( "" ), foldFilename( "" ), labelFilename( "" ), outFilename( "" ), geneOutFilename( "" ), 
+		statesOutFilename( "" ), foldsOutFilename( "" ), timeOutFilename( "" ),
 		m( 0 ), n( 0 ), prob( 0.0 ),
 		nFolds( 0 ), seed( 0 ), verboseLevel(0),
 		nThreads( 0 ),
@@ -15,18 +16,20 @@ ArgHandle::~ArgHandle() {}
 
 void ArgHandle::processCommandLine() {
 
-	char const *short_options = "d:l:g:f:m:n:s:N:o:k:mt:S:q:t:v:h";
+	char const *short_options = "d:l:f:m:n:s:N:o:g:u:j:S:q:t:v:h";
 	const struct option long_options[] = {
 
 		{ "data",			required_argument, 0, 'd' },
 		{ "labels",			required_argument, 0, 'l' },
-		{ "gene",			required_argument, 0, 'g' },
 		{ "folds",			required_argument, 0, 'f' },
 		{ "features",		required_argument, 0, 'm' },
 		{ "variables",		required_argument, 0, 'n' },
 		{ "simulate",		required_argument, 0, 's' },
 		{ "nFolds",			required_argument, 0, 'N' },
 		{ "out",			required_argument, 0, 'o' },
+		{ "geneOut",		required_argument, 0, 'g' },
+		{ "foldsOut",		required_argument, 0, 'u' },
+		{ "statesOut",		required_argument, 0, 'j' },
 		{ "seed",			required_argument, 0, 'S' },
 		{ "nThrd",			required_argument, 0, 'q' },
 		{ "tttt",			required_argument, 0, 't' },
@@ -69,10 +72,6 @@ void ArgHandle::processCommandLine() {
 			labelFilename = std::string( optarg );
 			break;
 
-		case 'g':
-			geneFilename = std::string( optarg );
-			break;
-
 		case 'f':
 			foldFilename = std::string( optarg );
 			break;
@@ -81,8 +80,20 @@ void ArgHandle::processCommandLine() {
 			outFilename = std::string( optarg );
 			break;
 
+		case 'g':
+			geneOutFilename = std::string( optarg );
+			break;
+
+		case 'u':
+			foldsOutFilename = std::string( optarg );
+			break;
+
+		case 'j':
+			statesOutFilename = std::string( optarg );
+			break;
+
 		case 't':
-			timeFilename = std::string( optarg );
+			timeOutFilename = std::string( optarg );
 			break;
 
 		case 'n':
@@ -223,7 +234,7 @@ void ArgHandle::processCommandLine() {
 			std::cout << "\033[33;1mnFolds option ignored (mumble, mumble...).\033[0m" << std::endl;
 		}
 
-		if (geneFilename.empty()) {
+		if (geneOutFilename.empty()) {
 			std::cout << "\033[33;1mNo output gene names file name defined (--gene).\033[0m" << std::endl;
 			abort();
 		}

@@ -49,9 +49,11 @@ int main(int argc, char *argv[]) {
 	uint32_t			nThrd			= commandLine.nThreads;
 	std::string			graphFileName	= commandLine.dataFilename;
 	std::string			labelsFileName	= commandLine.labelFilename;
-	std::string			timeFileName	= commandLine.timeFilename;
+	std::string			timeFileName	= commandLine.timeOutFilename;
 	std::string			outFileName		= commandLine.outFilename;
-	std::string			geneFileName	= commandLine.geneFilename;
+	std::string			geneFileName	= commandLine.geneOutFilename;
+	std::string			foldsFilename	= commandLine.foldsOutFilename;
+	std::string			statesFilename	= commandLine.statesOutFilename;
 
 	bool GPUEnabled = 1;
 
@@ -65,7 +67,7 @@ int main(int argc, char *argv[]) {
 
 	N = test.getStruct()->nNodes;
 
-	fileExporter fExport( outFileName, geneFileName, &fImport.inverseGeneMap, N );
+	fileExporter fExport( outFileName, geneFileName, foldsFilename, statesFilename, &fImport.inverseGeneMap, N );
 	fExport.saveGeneNames();
 
 	std::cout << "Classe: " << std::flush;

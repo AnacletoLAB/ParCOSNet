@@ -12,7 +12,8 @@
 
 class fileExporter {
 public:
-	fileExporter( std::string outFileName, std::string geneFileName, std::map<int, std::string> * inverseGeneMap, uint32_t nNodes );
+	fileExporter( std::string outFileName, std::string geneFileName, std::string foldsFilename, std::string statesFilename,
+		std::map<int, std::string> * inverseGeneMap, uint32_t nNodes );
 	~fileExporter();
 
 	void saveGeneNames();
@@ -21,9 +22,13 @@ public:
 
 	std::ofstream outFile;
 	std::ofstream geneFile;
+	std::ofstream foldsFile;
+	std::ofstream statesFile;
 
 	std::string outFileName;
 	std::string geneFileName;
+	std::string foldsFilename;
+	std::string statesFilename;
 
 	std::map<int, std::string> * inverseGeneMap;
 
@@ -33,5 +38,6 @@ public:
 private:
 	// Variabili utilizzate nella lettura dei file
 	std::stringstream 		ss;
+	uint32_t			*	tempFolds;
 
 };
