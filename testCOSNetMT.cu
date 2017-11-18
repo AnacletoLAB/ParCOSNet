@@ -92,6 +92,14 @@ int main(int argc, char *argv[]) {
 
 template<typename nodeW, typename edgeW>
 void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, GraphStruct<nodeW,edgeW> * test, fileImporter * fImport, fileExporter * fExport ) {
+	// Ogni thread mantiene una copia locale della somma dei pesi del grafo.
+	edgeW	*	sumOfWghs = new edgeW[test->nNodes];
+	for (uint32_t j = 0; j < test->nNodes; j++) {
+		sumOfWghs[j] = 0;
+		for (uint32_t k = test->cumulDegs[j]; k < test->cumulDegs[j + 1]; k++)
+			sumOfWghs[j] += test->edgeWeights[k];
+	}
+
 	for (uint32_t cl = thrdNum; cl < fImport->nOfClasses; cl += totThreads) {
 
 		std::string currentClassName;
@@ -114,7 +122,7 @@ void doMT(uint32_t thrdNum, uint32_t totThreads, uint32_t N, uint32_t seed, Grap
 		// Ciclo sui fold
 		for (uint32_t currentFold = 0; currentFold < CN.numberOfFolds; currentFold++) {
 			CN.train( currentFold );
-			CN.run();
+			CN.run( sumOfWghs );
 			//CN.runCPU();
 			CN.deallocateLabs();
 		}

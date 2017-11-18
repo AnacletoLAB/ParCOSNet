@@ -26,7 +26,7 @@ public:
 	void setLabels( std::vector<int32_t> &labelsFromFile );
 	void prepare();
 	void train( uint32_t currentFold );
-	void run();
+	void run( const edgeW * const sumOfWghs );
 	void runCPU();
 	void deallocateLabs();
 

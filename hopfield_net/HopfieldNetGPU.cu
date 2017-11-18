@@ -16,8 +16,6 @@
 
 #define ITERATION_LIMIT 5000
 
-
- //COME FA A RIEMPIRE hState.size nel costruttore HopfieldNet se il grafo è in device?
 template<typename nodeW, typename edgeW>
 HopfieldNetGPU<nodeW, edgeW>::HopfieldNetGPU( const Graph<nodeW, edgeW> * const inGraph_d, const Coloring * const inCol_d,
 		float inPosState, float inNegState, float inRegulWeight ):
@@ -467,76 +465,92 @@ void HopfieldNetGPU<nodeW, edgeW>::returnVal( float * const inState, float * con
 	}
 }
 
+// Funzione di test per valutare correttezza del kernel "accumulateScores"
+//template<typename nodeW, typename edgeW>
+//void HopfieldNetGPU<nodeW, edgeW>::normalizeScore( const GraphStruct<nodeW, edgeW> * const bigGraph, const uint32_t *const reduxToFull, const edgeW * const sumOfWghs_h ) {
+//	cudaError_t cuSts;
+//	uint32_t n = graph_d->getStruct()->nNodes;
+//	uint32_t nOrig = bigGraph->nNodes;
+//	dim3 threadPerBlk( TPB_ACCUMUL, 1, 1 );
+//	uint32_t bPg = (n + 2 * threadPerBlk.x - 1) / (2 * threadPerBlk.x);
+//	dim3 blocksPerGrd( bPg, 1, 1 );
+//
+//	unitVal		*	input = new unitVal[n];
+//	unitVal		*	input_d;
+//	unitVal		*	accumulatedScores_h = new unitVal[bPg];
+//	unitVal		*	accumulatedScores_d;
+//
+//	cuSts = cudaMalloc( (void**)&input_d, n * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
+//	cuSts = cudaMalloc( (void**)&accumulatedScores_d, bPg * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
+//	std::fill( input, input + n, 0.0000009999 );
+//	cuSts = cudaMemcpy( input_d, input, n * sizeof( unitVal ), cudaMemcpyHostToDevice );
+//	HopfieldNetGPU_k::accumulateScores <<<blocksPerGrd, threadPerBlk>>> ( n, input_d, accumulatedScores_d );
+//	cudaDeviceSynchronize();
+//	cuSts = cudaGetLastError(); cudaCheck( cuSts, __FILE__, __LINE__ );
+//	cuSts = cudaMemcpy( accumulatedScores_h, accumulatedScores_d, bPg * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
+//	unitVal totScore_d = std::accumulate( accumulatedScores_h, accumulatedScores_h + bPg, 0.0 );
+//	unitVal totScore_h = std::accumulate( input, input + n, 0.0 );
+//	if (totScore_d != totScore_h) {
+//		std::cout << "totScore_d: " << totScore_d << " - totScore_h: " << totScore_h << std::endl;
+//		abort();
+//	}
+//}
 
 
-/*
-#	#	#	#	#	#	#	#	#	#	#	#	#
-
-			HopfieldNetGPU normalize score
-
-#	#	#	#	#	#	#	#	#	#	#	#	#
-*/
 
 template<typename nodeW, typename edgeW>
-void HopfieldNetGPU<nodeW, edgeW>::normalizeScore( const GraphStruct<nodeW, edgeW> * const bigGraph, const uint32_t *const reduxToFull ) {
-	cudaError_t cuSts;
-	uint32_t n = graph_d->getStruct()->nNodes;
-	uint32_t nOrig = bigGraph->nNodes;
-	dim3 threadPerBlk( TPB_ACCUMUL, 1, 1 );
-	uint32_t bPg = (n + 2 * threadPerBlk.x - 1) / (2 * threadPerBlk.x);
-	dim3 blocksPerGrd( bPg, 1, 1 );
+void HopfieldNetGPU<nodeW, edgeW>::normalizeScore( const GraphStruct<nodeW, edgeW> * const bigGraph, const uint32_t *const reduxToFull, const edgeW * const sumOfWghs_h ) {
+	cudaError_t	cuSts;
+	uint32_t	n = graph_d->getStruct()->nNodes;
+	uint32_t	nOrig = bigGraph->nNodes;
+	dim3		threadPerBlk( TPB_ACCUMUL, 1, 1 );
+	uint32_t	bPg = (n + 2 * threadPerBlk.x - 1) / (2 * threadPerBlk.x);
+	dim3		blocksPerGrd( bPg, 1, 1 );
 
 	unitVal		*	accumulatedScores;
-	uint32_t	*	indexes;
-	unitVal		*	sumOfWghs;
-	cuSts = cudaMalloc( (void**)&accumulatedScores, bPg * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	cuSts = cudaMalloc( (void**)&indexes, n * sizeof( uint32_t ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	cuSts = cudaMalloc( (void**)&sumOfWghs, nOrig * sizeof( unitVal ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	std::unique_ptr<unitVal[]> 		accumulatedScores_h( new unitVal[bPg] );
-	std::unique_ptr<uint32_t[]>   	indexes_h( new uint32_t[n] );
-	std::unique_ptr<unitVal[]> 		sumOfWghs_h( new unitVal[nOrig] );
+	uint32_t	*	reduxToFull_d;
+	unitVal		*	sumOfWghs_d;
+	cuSts = cudaMalloc( (void**)&accumulatedScores,	bPg * sizeof( unitVal ) );		cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMalloc( (void**)&reduxToFull_d,		n * sizeof( uint32_t ) );		cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMalloc( (void**)&sumOfWghs_d,		nOrig * sizeof( unitVal ) );	cudaCheck( cuSts, __FILE__, __LINE__ );
+	std::unique_ptr<unitVal[]> 	accumulatedScores_h( new unitVal[bPg] );
 
-	//HopfieldNetGPU_k::accumulateDegAndScores <<<blocksPerGrd, threadPerBlk>>> ( n, graph->deg, hState_d.score, accumulatedDeg, accumulatedScores );
 	// Calcolo somma degli scores
 	HopfieldNetGPU_k::accumulateScores <<<blocksPerGrd, threadPerBlk>>> ( n, hState_d.score, accumulatedScores );
-	if (cudaGetLastError() != cudaSuccess) { std::cout << "CUDA ERROR: HopfieldNetGPUCompr_k::accumulateScores" << std::endl; abort(); }			// DEBUG
-
-	// Calcolo somma dei pesi per ogni nodo del grafo originale
-	for (uint32_t j = 0; j < nOrig; j++) {
-		//sumOfWghs_h[j] = std::accumulate(bigGraph->edgeWeights[j], bigGraph->edgeWeights[j] + (bigGraph->cumulDegs[j+1] - bigGraph->cumulDegs[j]), 0.0);
-		sumOfWghs_h[j] = 0;
-		for (uint32_t k = bigGraph->cumulDegs[j]; k < bigGraph->cumulDegs[j+1]; k++)
-			sumOfWghs_h[j] += bigGraph->edgeWeights[k];
-	}
-
-	uint32_t i = 0;
-	for_each( indexes_h.get(), indexes_h.get() + n, [reduxToFull, &i]( uint32_t &val ) {val = reduxToFull[i++]; } );
-	// ora indexes_h contiene la mappa reduxToFull per ogni nodo del grafo unlabelled
+	cuSts = cudaGetLastError(); cudaCheck( cuSts, __FILE__, __LINE__ );
 
 	// accumulazione della somma dei pesi dei nodi unlabelled
 	float accumulatedWDeg = 0.0;
 	for (uint32_t j = 0; j < n; j++) {
-		accumulatedWDeg += sumOfWghs_h[indexes_h[j]];
+		accumulatedWDeg += sumOfWghs_h[reduxToFull[j]];
 	}
 	cudaDeviceSynchronize();
 
 	cuSts = cudaMemcpy( accumulatedScores_h.get(), accumulatedScores, bPg * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	cuSts = cudaMemcpy( sumOfWghs, sumOfWghs_h.get(), nOrig * sizeof( unitVal ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	cuSts = cudaMemcpy( indexes, indexes_h.get(), n * sizeof( uint32_t ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemcpy( sumOfWghs_d, sumOfWghs_h, nOrig * sizeof( unitVal ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaMemcpy( reduxToFull_d, reduxToFull, n * sizeof( uint32_t ), cudaMemcpyHostToDevice ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
-	// finisco l'accumulazione di deg e score su CPU
+	// finisco l'accumulazione degli score su CPU
 	unitVal totScore = std::accumulate( accumulatedScores_h.get(), accumulatedScores_h.get() + bPg, 0.0 );
+
+			unitVal * temphStateScores = new unitVal[n];
+			cuSts = cudaMemcpy( temphStateScores, hState_d.score, n * sizeof( unitVal ), cudaMemcpyDeviceToHost );
+			unitVal tempAccScores = 0.0f;
+			std::for_each( temphStateScores, temphStateScores + n, [&tempAccScores]( unitVal nn ) {tempAccScores += fabs( nn ); } );
+			if (totScore != tempAccScores) {
+				std::cout << "errore nella reduction sugli score. GPU = " << totScore << " - CPU: " << tempAccScores << std::endl;
+				abort();
+			}
+			delete[] temphStateScores;
 
 	bPg = (n + threadPerBlk.x - 1) / threadPerBlk.x;
 	blocksPerGrd = dim3( bPg, 1, 1 );
-	HopfieldNetGPU_k::normalizeScores <<<blocksPerGrd, threadPerBlk>>> ( n, accumulatedWDeg, totScore, sumOfWghs, indexes, hState_d.score );
-	if (cudaGetLastError() != cudaSuccess) { std::cout << "CUDA ERROR: HopfieldNetGPUCompr_k::normalizeScores" << std::endl; abort(); }			// DEBUG
-
-	cuSts = cudaMemcpy( sumOfWghs_h.get(), sumOfWghs, nOrig * sizeof( unitVal ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	HopfieldNetGPU_k::normalizeScores <<<blocksPerGrd, threadPerBlk>>> ( n, accumulatedWDeg, totScore, sumOfWghs_d, reduxToFull_d, hState_d.score );
 	cudaDeviceSynchronize();
-
-	cuSts = cudaFree( sumOfWghs ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	cuSts = cudaFree( indexes ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaGetLastError(); cudaCheck( cuSts, __FILE__, __LINE__ );
+	
+	cuSts = cudaFree( sumOfWghs_d ); cudaCheck( cuSts, __FILE__, __LINE__ );
+	cuSts = cudaFree( reduxToFull_d ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	cuSts = cudaFree( accumulatedScores ); cudaCheck( cuSts, __FILE__, __LINE__ );
 }
 

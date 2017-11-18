@@ -467,7 +467,7 @@ void COSNet<nodeW, edgeW>::train( uint32_t currentFold ) {
 }
 
 template<typename nodeW, typename edgeW>
-void COSNet<nodeW, edgeW>::run() {
+void COSNet<nodeW, edgeW>::run( const edgeW * const sumOfWghs ) {
 
 	// Costruttore grafo ridotto SU GPU!
 	Graph<nodeW, edgeW> grafoRedux( unlabelledPositions, unlabelledSize, labelsPurged, str, fullToRedux, reduxToFull, threshold, true );
@@ -484,7 +484,7 @@ void COSNet<nodeW, edgeW>::run() {
 	//HN_d.setInitState( sinf(alpha) );
 	//HN_d.run_edgewise();
 	HN_d.run_nodewise();
-	HN_d.normalizeScore( str, reduxToFull );
+	HN_d.normalizeScore( str, reduxToFull, sumOfWghs );
 
 	HN_d.returnVal( stateRedux.get(), scoreRedux.get() );
 	//std::for_each( stateRedux.get(), stateRedux.get() + grafoRedux.getStruct()->nNodes, [](float nn) {std::cout << nn << " ";} );

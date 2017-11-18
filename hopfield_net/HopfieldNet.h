@@ -15,7 +15,7 @@ using namespace std;
 //#define PRINTHOPFIELDTITLE
 //#define VERBOSEHOPFIELD
 
-#define TPB_ACCUMUL 128
+#define TPB_ACCUMUL 32
 
 typedef int unitIdx;      	// net unit index
 typedef float unitVal;      // net unit value
@@ -86,7 +86,7 @@ public:
 	void 			setInitStateProb( Prob p, char type);
 	void 			setRandomInitState( GPURand * const randomizer );
 	void 			returnVal( float * const inState, float * const inScore );
-	void			normalizeScore( const GraphStruct<nodeW, edgeW> * const bigGraph, const uint32_t *const reduxToFull );
+	void			normalizeScore( const GraphStruct<nodeW, edgeW> * const bigGraph, const uint32_t *const reduxToFull, const edgeW * const sumOfWghs );
 
 	const Graph<nodeW, edgeW> 		* const graph_d;
 	const Coloring					* const col_d;
