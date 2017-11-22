@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
 
 	Graph<float, float> test( &fImport, !GPUEnabled );	// Grafo completo DEVE rimanere su CPU
 	std::cout << "Nodi: " << test.getStruct()->nNodes << " - Archi: " << test.getStruct()->nEdges << std::endl;
+	std::cout << "Numero classi: " << fImport.nOfClasses << std::endl;
 
 	N = test.getStruct()->nNodes;
 
