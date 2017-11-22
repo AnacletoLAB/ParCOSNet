@@ -15,7 +15,7 @@ using namespace std;
 //#define PRINTHOPFIELDTITLE
 //#define VERBOSEHOPFIELD
 
-#define TPB_ACCUMUL 32
+#define TPB_ACCUMUL 512
 
 typedef int unitIdx;      	// net unit index
 typedef float unitVal;      // net unit value
@@ -119,9 +119,11 @@ namespace HopfieldNetGPU_k {
 		const uint32_t nCol, const uint32_t	* const colClass, const uint32_t * const cumulSize,
 		const int colorIdx,
 		bool * const modified_d,
-		const float posState, const float negState );
+		const float posState, const float negState, const float regulWeight );
 
 	__global__ void accumulateScores( const uint32_t unlab, const unitVal * const scores,
+			unitVal * const accumScores );
+	__global__ void accumulateScores2( const uint32_t unlab, const unitVal * const scores,
 			unitVal * const accumScores );
 	__global__ void normalizeScores( const uint32_t unlab, const float accumWDeg, const unitVal accumScores,
 			const unitVal * const sumOfWeights, const uint32_t * const indexes, unitVal * const scores );
