@@ -124,6 +124,23 @@ void HopfieldNetCPU<nodeW, edgeW>::run() {
 			for (int j = 0; j < degree; j++){
 				sum += (this->graph->getStruct()->edgeWeights[offset+j] - this->regulWeight ) * this->hState.state[ this->graph->getStruct()->neighs[offset+j] ];
 			}
+
+			// TODO
+			// Modifica regolarizzazione
+			// uint32_t nodoreg;
+			// for (uint32_t i = 0; i < nCol; i++) {
+			// 	if (i == colorIdx)
+			// 		continue;
+			// 	else {
+			// 		uint32_t IS_size = cumulSize[i + 1] - cumulSize[i];
+			// 		for (uint32_t k = 0; k < IS_size; k++) {
+			// 			nodoreg = colClass[cumulSize[i] + k];
+			// 			smem[0] -= state[nodoreg] * regulWeight;
+			// 		}
+			// 	}
+			// }
+
+
 			this->hState.state[uid] = (sum < 0 ? this->negState : this->posState);
 
 			// controllo se state[uid] è stato modificato
