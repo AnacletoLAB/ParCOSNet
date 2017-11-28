@@ -18,10 +18,10 @@ do.perf.single <- function (Y, pred){
 library(HEMDAG)
 origLabs <- get(load("/home/frasca/BMC_SI_BITS17_vanillaCODE/human.go.ann.CC.6.june.17.stringID.atl5.rda"))
 
-a <- read.table("/home/alessandro/dev/src/COSNet/build/outHumanCC.tsv",stringsAsFactors=F)
-d <- readLines("/home/alessandro/dev/src/COSNet/build/geneHumanCC.tsv")
-foldsFromFile <- read.table("/home/alessandro/dev/src/COSNet/build/foldsHumanCC.tsv",stringsAsFactors=F)
-pred <- read.table("/home/alessandro/dev/src/COSNet/build/statesHumanCC.tsv",stringsAsFactors=F)
+a <- read.table("outHumanCC.tsv",stringsAsFactors=F)
+d <- readLines("geneHumanCC.tsv")
+foldsFromFile <- read.table("foldsHumanCC.tsv",stringsAsFactors=F)
+pred <- read.table("statesHumanCC.tsv",stringsAsFactors=F)
 
 # Preprazione matrice degli score
 GOterms <- a[,1]
@@ -57,6 +57,8 @@ auprc <- rep(0, m)
 names(auprc) <- colnames(origLabs)
 Rec <- Prec <-  F <- auprc
 
+Init <- proc.time();
+
 for(k in 1:m){
     tmpfolds <- as.vector(folds[,k])
 	val <- unique(tmpfolds)+1
@@ -72,6 +74,10 @@ for(k in 1:m){
 		F[k]<- F[k] + res["F"]
 	}
 }
+
+End <- proc.time();
+time <- End[3]-Init[3];
+cat("time (s):", time, "\n" )
 
 auprc <- auprc/length(val)
 Rec <- Rec/length(val)
