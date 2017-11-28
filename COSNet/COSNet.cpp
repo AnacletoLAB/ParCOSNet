@@ -75,12 +75,13 @@ void COSNet<nodeW,edgeW>::compute_angles( const float * const pos_vect, const fl
 		// excluding lanes parallel to y axes
 		if (x1 != 0) {
 			m = (float)y1/x1;
-			thetas[j] = atan(m);
+			thetas[j] = atanf(m);
 		}
 		else
 			//thetas[j] = (float)M_PI/2 - DBL_MIN;
 			//thetas[j] = 1.57;
-			thetas[j] = (float)1.57 - DBL_MIN;
+			thetas[j] = 1.56f;
+			//thetas[j] = 1.57f - FLT_MIN;
 	}
 }
 
@@ -100,7 +101,7 @@ void COSNet<nodeW,edgeW>::compute_c( const float * const pos_vect, const float *
 	for (int j = 0; j < size; j++) {
 		order_c_values[j] = j;
 		x1 = pos_vect[j];	y1 = neg_vect[j];
-		c_values[j] = y1 - tan(theta_best) * x1;
+		c_values[j] = y1 - tanf(theta_best) * x1;
 	}
 }
 
@@ -110,9 +111,9 @@ int COSNet<nodeW,edgeW>::partition( float a[], int indices[], int l, int r ) {
    int i, j;
    float pivot;
    pivot = a[l];
-   i = l; j = r+1;
+   i = l - 1; j = r+1;
    while(1) {
-       do ++i; while( i <= r && a[i] <= pivot );
+       do ++i; while( i <= r && a[i] < pivot );
        do --j; while( a[j] > pivot );
        if( i >= j ) break;
        std::swap(a[i], a[j]);
@@ -236,8 +237,8 @@ void COSNet<nodeW,edgeW>::error_minimization( float *pos_vect, float *neg_vect, 
  		i = i + cnt;
 	}
     //aggiunta per ovviare a mancanza di regolarizzazione
-    if(theta_best > 1.55f)
-		theta_best = 1.55f;
+    //if(theta_best > 1.55f)
+	//	theta_best = 1.55f;
 
 // ------- Step 2: computing best intercept---------------
 	compute_c(pos_vect, neg_vect, order_c_values.get(), c_values.get(), theta_best, n_);
