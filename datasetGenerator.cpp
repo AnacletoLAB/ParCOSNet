@@ -7,40 +7,46 @@
 #include <string>
 #include <vector>
 #include <set>
-#include "graph/graph.h"	// in realta' non serve!
+#include <cstring>
 
 std::vector<std::string> generateRandomName( const int n );
 
 int main( int argc, char ** argv ) {
 	if (argc < 5) {
-		std::cout << "suca" << std::endl;
+		std::cout << "  *** ParCOSNet random dataset generator ***" << std::endl;
+		std::cout << "by Alessandro Petrini, 2017 - Università degli Studi di Milano - Dept. Computer Science" << std::endl;
+		std::cout << "" << std::endl;
+		std::cout << "This utility generates a random dataset for evaluating ParCOSNet." << std::endl;
+		std::cout << "The network is created as a Erdos graph, given the number of nodes and" << std::endl;
+		std::cout << " the probability p of having an edge (i,j), for every i and j," << std::endl;
+		std::cout << " 0 <= i < nNodes, 0 <= j < nNodes. For every edge, also the corrisponding" << std::endl;
+		std::cout << " weight is generated as a random number [0,1] uniformly distributed." << std::endl;
+		std::cout << " The resulting net has no isolated nodes." << std::endl;
+		std::cout << "A label file is also created, highly unbalanced towards the majority class." << std::endl;
+		std::cout << "" << std::endl;
+		std::cout << "Usage: ./datasetGen nNodes prob netFile.tsv labFile.tsv" << std::endl;
+		std::cout << "		nNodes:      number of nodes to be generated (positive, integer)" << std::endl;
+		std::cout << "		prob:        probability for each edge (0 <= prob < 1, float)" << std::endl;
+		std::cout << "      netFile.tsv: outfile name for the generated net" << std::endl;
+		std::cout << "      labFile.tsv: outfile name for the generated labels" << std::endl;
 		return -1;
 	}
 
 	// argc
 	// 1: nNodes
-	// 2: nome label
+	// 2: densita'
 	// 3: nome rete
-	// 4: densita'
+	// 4: nome label
 	uint32_t		nNodes = atoi( argv[1] );
 	uint32_t		nClasses = 1;
-	std::string		labelFileName( argv[2] );
-	std::string		netFileName( argv[3] );
 	float			probLabels	= 0.01f;
-	float			probDensity	= atof( argv[4] );
+	float			probDensity	= atof( argv[2] );
+	std::string		labelFileName( argv[4] );
+	std::string		netFileName( argv[3] );
 
 	std::cout << "nNodes: " << nNodes << " - probDensity: " << probDensity << " - label: "
 		<< labelFileName << " - net: " << netFileName << std::endl;
 
-	//uint32_t		nNodes = 1000000 /* = inserire */;
-	//uint32_t		nClasses = 12 /* = inserire */;
-	//std::string labelFileName( "generatedLabels1000k.txt" );
-	//std::string netFileName( "erdos1000k.txt" );
-	// OPZIONALE: leggere i parametri precedenti da riga di comando
-
-	//float probLabels = 0.05f;
-	//float probDensity = 100.0 / (float) nNodes;
-	//std::default_random_engine eng( time( NULL ) );
 	std::default_random_engine eng( time( NULL ) );
 	std::uniform_real_distribution<> randR(0.0, 1.0);
 	std::normal_distribution<> randNorm(0, 0.1);
@@ -49,12 +55,12 @@ int main( int argc, char ** argv ) {
 	std::ofstream netFile( netFileName.c_str(), std::ios::out );
 
 	if (!labelFile.is_open()) {
-		std::cerr << "errore aperture file etichette" << std::endl;
+		std::cerr << "error opening labels file" << std::endl;
 		abort();
 	}
 
 	if (!netFile.is_open()) {
-		std::cerr << "errore aperture file rete" << std::endl;
+		std::cerr << "errore opening net file" << std::endl;
 		abort();
 	}
 
@@ -69,8 +75,6 @@ int main( int argc, char ** argv ) {
 	for (uint32_t i = 0; i < nClasses; i++) {
 		std::string currentClassName( classBaseName + std::to_string( i ) );
 		for (uint32_t j = 0; j < nNodes; j++ ) {
-			// estrazione di un numero random
-			// se estrazione ha successo
 			if (randR(eng) < probLabels) {
 				labelFile << nodeNames[j] << "\t" << currentClassName << std::endl;
 			}
@@ -80,10 +84,6 @@ int main( int argc, char ** argv ) {
 	labelFile.close();
 
 	// Ciclo per generazione della rete
-	// Usare stessa strategia di generazione del generatore di grafi di Erdos
-	// gia' implementata.
-	// Per la scrittura dell'arco generato, usare l'istruzione:
-	// netfile << nodeNames[i] << " " << nodeNames[j] << " " << randomWeight << std::endl;
 	uint64_t 	*	cumulDegs = new uint64_t[nNodes + 1];
 	uint64_t	*	neighs;
 	float		*	weights;
@@ -136,13 +136,11 @@ int main( int argc, char ** argv ) {
 			std::cout << "#" << std::flush;
 		for (uint64_t j = cumulDegs[i]; j < cumulDegs[i+1]; j++) {
 			netFile << nodeNames[i] << "\t" << nodeNames[neighs[j]] << "\t" << randR( eng ) << std::endl;
-				//netFile << nodeNames[i] << "\t" << nodeNames[neighs[j]] << "\t" << fabs( randNorm( eng ) ) << std::endl;
-			//netFile << i << "\t" << neighs[j] << "\t" <<  fabs( randNorm( eng ) ) << std::endl;
 		}
 	}
 
 	std::cout << std::endl;
-	std::cout << "Nodi Isolati corretti: " << nodiIsolatiCorretti << std::endl;
+	std::cout << "Number of correct isolated nodes: " << nodiIsolatiCorretti << std::endl;
 
 	netFile.close();
 	return 0;
@@ -157,7 +155,7 @@ std::vector<std::string> generateRandomName( const int n ) {
 	        "abcdefghijklmnopqrstuvwxyz";
 	std::vector<std::string> out;
 	std::set<std::string> tempSet;
-	const int slen = 24;	// <- dovrebbe bastare
+	const int slen = 24;
 	char stringa[slen + 1];
 	stringa[slen] = 0;
 
@@ -169,11 +167,6 @@ std::vector<std::string> generateRandomName( const int n ) {
 	for ( auto it = tempSet.begin(); it != tempSet.end(); it++ ) {
 		out.push_back( std::string( *it ) );
 	}
-
-	/*for (int i = 0; i < n; i++) {
-		std::for_each( stringa, stringa + slen, [alphanum](char &c){c = alphanum[rand() % (sizeof(alphanum) - 1)];} );
-		out.push_back( std::string( stringa ) );
-	}*/
 
 	return out;
 }
