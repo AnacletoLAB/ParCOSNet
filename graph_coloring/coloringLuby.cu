@@ -1,3 +1,5 @@
+// COSnet - Cologing GPU Luby class
+// Alessandro Petrini, 2017
 #ifdef WIN32
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -49,15 +51,6 @@ ColoringLuby<nodeW,edgeW>::ColoringLuby( Graph<nodeW,edgeW> * inGraph_d, curandS
 //parte di convert_IS_cover commentata
 template<typename nodeW, typename edgeW>
 ColoringLuby<nodeW, edgeW>::~ColoringLuby() {
-	// Dati allocati in convert_IS_cover
-	/*cuSts = cudaFree( outColoring_d->IS ); cudaCheck( cuSts, __FILE__, __LINE__ );
-
-	for (int i = 0; i < numOfColors; i++)
-		cuSts = cudaFree( tempIS[i]); cudaCheck( cuSts, __FILE__, __LINE__ );
-
-	cuSts = cudaFree( outColoring_d->ISsize ); cudaCheck( cuSts, __FILE__, __LINE__ );
-	delete[] tempIS;*/
-
 	// Dati allocati nel costruttore
 	cuSts = cudaFree( numOfColors_d ); cudaCheck( cuSts, __FILE__, __LINE__ );
 	cuSts = cudaFree( uncoloredNodes_d ); cudaCheck( cuSts, __FILE__, __LINE__ );
@@ -77,8 +70,6 @@ ColoringLuby<nodeW, edgeW>::~ColoringLuby() {
 
 }
 
-
-//giusto??
 template<typename nodeW, typename edgeW>
 Coloring* ColoringLuby<nodeW,edgeW>::getColoringGPU() {
 	return outColoring_d.get();
@@ -90,7 +81,6 @@ void ColoringLuby<nodeW, edgeW>::printgraph() {
 }
 
 
-//Gabriele: ordine di numOfColors*nnodes ottimizzazioni?
 template<typename nodeW, typename edgeW>
 void ColoringLuby<nodeW, edgeW>::convert_to_standard_notation(){
 	int idx;
@@ -116,25 +106,7 @@ void ColoringLuby<nodeW, edgeW>::convert_to_standard_notation(){
 
 		cumulSize[c+1]=idx;
 	}
-/*
-	for (uint32_t i = 0; i < nnodes; i++)
-		std::cout << coloring_h[i] << " ";
-	std::cout << std::endl;
 
-	for (uint32_t i = 0; i < numOfColors + 1; i++)
-		std::cout << cumulSize[i] << " ";
-	std::cout << std::endl;
-
-	for (int i = 0; i < numOfColors; i++) {
-		uint32_t ISoffs = cumulSize[i];
-		uint32_t ISsize = cumulSize[i + 1] - cumulSize[i];
-		std::cout << "colore " << i + 1 << ": ";
-		for (uint32_t j = ISoffs; j < ISoffs + ISsize; j++) {
-			std::cout << colClass[j] << " ";
-		}
-		std::cout << std::endl;
-	}
-*/
 #ifdef TESTCOLORINGCORRECTNESS
 	std::cout << "Test colorazione attivato!" << std::endl;
 	std::unique_ptr<node_sz[]> temp_cumulDegs( new node_sz[graphStruct_d->nNodes + 1]);
@@ -169,17 +141,17 @@ void ColoringLuby<nodeW, edgeW>::convert_to_standard_notation(){
 
 
 #ifdef PRINT_COLORING
-	printf( "\nStampa convertita in formato standard GPU colorer\n" );
+	std::cout << "Stampa convertita in formato standard GPU colorer" << std::endl;
 	int temp, size;
 	temp=0;
 	for (int i = 0; i < numOfColors; i++) {
-		printf( "Colore %d: ", i );
+		std::cout << "Colore: " << i;
 		size=cumulSize[i+1]-cumulSize[i];
 		for (int j = 0; j < size; j++){
-			printf( "%d ", colClass[temp] );
+			std::cout << colClass[temp] << " ";
 			temp++;
 		}
-		printf( "\n" );
+		std::cout << std::endl;
 	}
 #endif
 
@@ -188,13 +160,6 @@ void ColoringLuby<nodeW, edgeW>::convert_to_standard_notation(){
 }
 
 
-/*
-#	#	#	#	#	#	#	#	#	#	#	#	#
-
-				PRIVATE KERNELS
-
-#	#	#	#	#	#	#	#	#	#	#	#	#
-*/
 
 // Rimuove dal vettore dei candidati i nodi già colorati
 __global__ void ColoringLuby_k::prune_eligible( const int nnodes, const int * const coloring_d, bool *const cands_d ) {
@@ -220,12 +185,8 @@ __global__ void ColoringLuby_k::set_initial_distr_k( int nnodes, curandState * s
 }
 
 
-// Controllo se esistono conflitti nella scelta dei candicati (presenza di nodi adiacenti) e li elimino
-// Alessandro: Ottimizzazioni: questo kernel e' trppo inefficiente!
-// Gabriele: bottleneck negli accessi di memoria?
-// graphStruct_d->neighs e/o i_i_d copiati in una memoria più veloce?
+
 template<typename nodeW, typename edgeW>
-//__global__ void ColoringLuby_k::check_conflicts_k( int nnodes, const GraphStruct<nodeW,edgeW> * const graphStruct_d, bool * const i_i_d ) {
 __global__ void ColoringLuby_k::check_conflicts_k( int nnodes, const node_sz * const cumulDegs, const node * const neighs, bool * const i_i_d ) {
 	unsigned int idx = threadIdx.x + blockDim.x * blockIdx.x;
 	unsigned int deg_i, neigh_ijDeg;
@@ -248,15 +209,7 @@ __global__ void ColoringLuby_k::check_conflicts_k( int nnodes, const node_sz * c
 		//se anche il nodo neigh_ij (vicino del nodo idx) è stato scelto, ne elimino uno da i_i_d
 		//la discriminazione assicura che solo uno dei due venga rimosso
 		if (i_i_d[neigh_ij] == 1) {
-			// Alessandro:
-			// Questa fuziona e non incarta il colorer...
-			// else è ridondante?
 
-			// Gabriele:
-			// credo che sveltisca, se il thread di indice neigh_ij non è stato ancora attivato
-			// all'attivazione si fermerà a if (i_i_d[idx] == 0) return;
-			// senza controlli e/o accessi di memoria
-			// (forse?)
 			if ((deg_i <= neigh_ijDeg) /*&& (neigh_ij >= idx)*/) {
 				i_i_d[idx] = 0;
 				//break;
@@ -283,16 +236,13 @@ __global__ void ColoringLuby_k::update_eligible_k( int nnodes, const node_sz * c
 	offset = cumulDegs[idx];
 	deg_i = cumulDegs[idx+1] - cumulDegs[idx];
 
-	//Gabriele: perchè prima di if (i_i_d[idx] == 0) return; ?
+	//se il nodo idx è stato scelto e non è in conflitto
+	//lo segno su is_d
 	is_d[idx] |= i_i_d[idx];
 
 	//se il nodo idx non è stato scelto, mi fermo
 	if (i_i_d[idx] == 0)
 		return;
-
-	//se il nodo idx è stato scelto e non è in conflitto
-	//lo segno su is_d
-	//is_d[idx] |= i_i_d[idx];
 
 	//lo rimuovo dai candidati
 	cands_d[idx] = 0;
@@ -353,33 +303,7 @@ __global__ void ColoringLuby_k::print_graph_k( int nnodes, const node_sz * const
 }
 
 
-/*
-#	#	#	#	#	#	#	#	#	#	#	#	#
 
-				MAIN MEMBER
-				SINGLE THREAD
-
-#	#	#	#	#	#	#	#	#	#	#	#	#
-*/
-
-// Appunti per ricordarmi
-/*
-	Corpo della generazione colorazione Luby
-	FLOW:
-		cudaMemset inizializzo array interni
-		CICLO_1(finchè tutti i nodi non sono colorati)
-			rimuovo da array candidati cands_d i nodi già colorati
-			azzero is_d
-			CICLO_2(finchè ci sono ancora nodi in cands_d)
-				scelta casuale (non controllata) tra i nodi non ancora colorati
-				controllo i conflitti e li elimino (nodi adiacenti nella scelta)
-				segno i candicati su is_d e rimuovo loro+vicini da cands_d
-				controllo se cands_d è vuoto
-			RIPETO CICLO_2
-			creo un nuovo colore, coloro i candidati del CICLO2 e controllo se ci sono ancora nodi non colorati
-		RIPETO CICLO_1
-
-*/
 template<typename nodeW, typename edgeW>
 void ColoringLuby<nodeW,edgeW>::run() {
 
@@ -464,7 +388,6 @@ void ColoringLuby<nodeW,edgeW>::run() {
 				if (tempPrint[i] == 1) printf( "%d ", i );
 			}
 			printf( "\n" );
-			//getchar();
 #endif
 			// Controllo se ci sono ancora candidati per il nuovo colore
 
@@ -485,7 +408,6 @@ void ColoringLuby<nodeW,edgeW>::run() {
 		printf( "\n\n" );
 #endif
 
-		//add_color_and_check_uncolored();
 		numOfColors++;
 		cuSts = cudaMemset( uncoloredNodes_d, 0, sizeof( bool ) ); cudaCheck( cuSts, __FILE__, __LINE__ );
 		ColoringLuby_k::add_color_and_check_uncolored_k <<< blocksPerGrid, threadsPerBlock >>> (nnodes, numOfColors, is_d, uncoloredNodes_d, coloring_d);
@@ -514,23 +436,10 @@ void ColoringLuby<nodeW,edgeW>::run() {
 	// test, posso per verificare che tutti i nodi siano stati effettivamente colorati
 	if (std::find( coloring_h.get(), coloring_h.get() + nnodes, 0 ) != coloring_h.get() + nnodes)
 		std::cout << "Uh oh..." << std::endl;
-
-	/*for(int i=0; i<nnodes;i++)
-		std::cout << coloring_h[i] << " ";
-	std::cout << std::endl;*/
 #endif
 
-
 	convert_to_standard_notation();
-	//std::cout << "ecco3: " << cudaGetErrorName( cudaGetLastError() ) << std::endl;
-
 }
-
-
-
-
-////////////////////////////////
-
 
 
 

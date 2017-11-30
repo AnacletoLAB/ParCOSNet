@@ -1,3 +1,5 @@
+// COSnet - Cologing GPU Luby (fast) class
+// Alessandro Petrini, 2017
 #ifdef WIN32
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -22,9 +24,6 @@ void ColoringLuby<nodeW, edgeW>::run_fast() {
 	std::cout << "\n\033[32;1m** Luby GPU fast colorer **\033[0m" << std::endl;
 #endif
 
-	//int numOfColors_d;
-	//cuSts = cudaMalloc( (void**)&numOfColors_d, sizeof( int ) );
-
 	// Preparo gli array per il primo giro
 	cuSts = cudaMemset( is_d, 0, nnodes * sizeof( bool ) );  cudaCheck( cuSts, __FILE__, __LINE__ );
 	cuSts = cudaMemset( i_i_d, 0, nnodes * sizeof( bool ) );  cudaCheck( cuSts, __FILE__, __LINE__ );
@@ -45,11 +44,9 @@ void ColoringLuby<nodeW, edgeW>::run_fast() {
 #endif
 
 	convert_to_standard_notation();
-	//cudaFree( numOfColors_d );
 }
 
 // Lanciare questo thread con configurazione <<< 1, 1 >>>
-//template<typename nodeW, typename edgeW>
 __global__ void ColoringLuby_k::fast_colorer_k(
 	const int nnodes,
 	const node_sz * const graphIdxDeg_d,
@@ -78,7 +75,6 @@ __global__ void ColoringLuby_k::fast_colorer_k(
 
 		do {
 			// imposto vettore possibili candidati
-			//ColoringLuby_k::set_initial_distr_k << < blocksPerGrid, threadsPerBlock >> > (nnodes, randStates, cands_d, graphIdxDeg_d, i_i_d);
 			ColoringLuby_k::set_initial_distr_k << < blocksPerGrid, threadsPerBlock >> > (nnodes, randStates, cands_d, i_i_d);
 			cudaDeviceSynchronize();
 

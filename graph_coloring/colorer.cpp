@@ -1,3 +1,5 @@
+// COSnet - Colorer CPU class
+// Alessandro Petrini, 2017
 #include <iostream>
 #include <stdlib.h>
 #include <algorithm>

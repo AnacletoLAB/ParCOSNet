@@ -1,3 +1,5 @@
+// COSnet - Coloring classes
+// Alessandro Petrini, 2017
 #pragma once
 
 #include <memory>
@@ -14,11 +16,8 @@
 //#define PRINT_COLORING
 
 
-typedef uint32_t col;     // node color
-typedef uint32_t col_sz;     // node color
-
-#define FOR_ALL_NODE for (node i = 0; i < n; i++)   // loop on graph nodes
-#define FOR_ALL_COL_0 for (col c = 0; c < nCol; c++)  // loop on coloring colors
+typedef uint32_t col;
+typedef uint32_t col_sz;
 
 // graph coloring
 struct Coloring {
@@ -142,7 +141,6 @@ namespace ColoringLuby_k {
 	template<typename nodeW, typename edgeW>
 	__global__ void print_graph_k( int nnodes, const node_sz * const cumulSize, const node * const neighs );
 
-	//template<typename nodeW, typename edgeW>
 	__global__ void fast_colorer_k( int nnodes, const node_sz * const cumulSize, const node * const neighs, curandState * randStates,
 	bool * const uncolored_d, bool * const nodeLeft_d, bool * const i_i_d, bool * const is_d, bool * const cands_d,	int * const numOfColors_d,
 	int * const coloring_d );
