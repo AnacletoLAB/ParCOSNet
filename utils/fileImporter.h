@@ -1,3 +1,5 @@
+// COSnet - file importer class
+// Alessandro Petrini, 2017
 #pragma once
 #include <string>
 #include <vector>

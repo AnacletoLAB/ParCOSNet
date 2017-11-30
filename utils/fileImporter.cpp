@@ -1,3 +1,5 @@
+// COSnet - file importer class
+// Alessandro Petrini, 2017
 #include "utils/fileImporter.h"
 
 fileImporter::fileImporter( std::string graphFileName, std::string labelFileName ) :
@@ -6,12 +8,8 @@ fileImporter::fileImporter( std::string graphFileName, std::string labelFileName
 		currentClass( "" ), geneIn( "" ), classIn( "" ), firstRound{ true }  {
 	// leggo dal file tutti i nomi dei geni e costruisco il set temporaneo
 	// intanto raccatto qualche info prliminare sul grafo...
-	//std::string inStr;
-	//std::string lab1, src, dst;
 	int i = 0;
 	int edges = 0;
-	//float ww;
-	//std::stringstream ss;
 	std::set<std::string> tempGeneNamesSet;
 
 	// Skip prima linea di header
