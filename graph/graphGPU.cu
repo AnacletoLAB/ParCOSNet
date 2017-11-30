@@ -1,3 +1,5 @@
+// COSnet - Graph class
+// Alessandro Petrini - Giuliano Grossi, 2017
 #include <stdio.h>
 #include <type_traits>
 #include "graph.h"
@@ -134,11 +136,9 @@ void Graph<nodeW, edgeW>::setupImporterGPU() {
 }
 
 
-// Questo setup è su con lo sputo. E' un miracolo se funziona.
 template<typename nodeW, typename edgeW>
 void Graph<nodeW, edgeW>::setupReduxGPU( const uint32_t * const unlabelled, const uint32_t unlabSize, const int32_t * const labels,
 	GraphStruct<nodeW, edgeW> * const fullGraphStruct, const uint32_t * const f2R, const uint32_t * const r2F, const float * const thresholds ) {
-
 
 	setMemGPU( unlabSize, GPUINIT_NODES );
 	str->nNodes = unlabSize;

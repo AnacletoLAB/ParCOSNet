@@ -1,3 +1,5 @@
+// COSnet - Graph class
+// Alessandro Petrini - Giuliano Grossi, 2017
 #pragma once
 #include <random>
 #include <memory>
@@ -13,7 +15,7 @@
 #include "utils/fileImporter.h"
 #include "GPUutils/GPURandomizer.h"
 
-typedef uint32_t node;     // graph node
+typedef uint32_t node;
 typedef uint32_t node_sz;
 
 typedef float Prob;

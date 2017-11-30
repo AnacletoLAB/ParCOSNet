@@ -1,3 +1,5 @@
+// COSnet - Graph class
+// Alessandro Petrini - Giuliano Grossi, 2017
 #include "graph.h"
 
 using namespace std;
@@ -42,7 +44,7 @@ void Graph<nodeW, edgeW>::setupImporter() {
 	str->nNodes = nn;
 
 #ifdef VERBOSEGRAPH
-	std::cout << "Creazione liste temporanee..." << std::endl;
+	std::cout << "Creating temporary lists..." << std::endl;
 #endif
 	std::list<uint32_t>	** tempN = new std::list<uint32_t>*[nn];
 	std::list<edgeW>	** tempW = new std::list<edgeW>*[nn];
@@ -113,7 +115,6 @@ void Graph<nodeW, edgeW>::setupImporter() {
 }
 
 
-// Questo setup è su con lo sputo. E' un miracolo se funziona.
 template<typename nodeW, typename edgeW>
 void Graph<nodeW, edgeW>::setupRedux( const uint32_t * const unlabelled, const uint32_t unlabSize, const int32_t * const labels,
 	GraphStruct<nodeW, edgeW> * const fullGraphStruct, const uint32_t * const f2R, const uint32_t * const r2F, const float * const thresholds ) {
@@ -168,7 +169,6 @@ void Graph<nodeW, edgeW>::setupRedux( const uint32_t * const unlabelled, const u
 		str->nodeThresholds[i] = thresholds[i];
 	}
 
-	// Devo fare altro? Altrimenti...
 	return;
 }
 
@@ -183,7 +183,6 @@ void Graph<nodeW, edgeW>::randGraphUnweighted(float prob,
 		std::default_random_engine & eng) {
 	if (prob < 0 || prob > 1) {
 		printf("[Graph] Warning: Probability not valid (set p = 0.5)!!\n");
-//		throw GraphStruct<nodeW,edgeW>::Invalid{};
 	}
 	uniform_real_distribution<> randR(0.0, 1.0);
 	node n = str->nNodes;
@@ -220,7 +219,6 @@ void Graph<nodeW, edgeW>::randGraphUnweighted(float prob,
 	else
 		connected = true;
 
-	// manage memory for edges with CUDA Unified Memory
 	if (GPUEnabled)
 		setMemGPU(str->nEdges, GPUINIT_EDGES);
 	else
