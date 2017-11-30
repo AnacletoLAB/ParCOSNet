@@ -1,6 +1,8 @@
+// COSnet - file exporter class
+// Alessandro Petrini, 2017
 #include "utils/fileExporter.h"
 
-fileExporter::fileExporter( std::string outFileName, std::string geneFileName, std::string foldsFilename, std::string statesFilename, 
+fileExporter::fileExporter( std::string outFileName, std::string geneFileName, std::string foldsFilename, std::string statesFilename,
 	std::map<int, std::string> * inverseGeneMap, uint32_t nNodes ) :
 		geneFileName( geneFileName ), outFileName( outFileName ),
 		foldsFilename( foldsFilename ), statesFilename( statesFilename ),
@@ -30,8 +32,6 @@ void fileExporter::saveGeneNames() {
 	geneFile = std::ofstream( geneFileName.c_str()/*, std::ios::out*/ );
 
 	if (geneFile.is_open()) {
-		//std::cout << "Salvo i nomi su un file" << std::endl;
-
 		geneFile << nNodes << std::endl;
 
 		for (uint32_t i = 0; i < nNodes; i++) {
