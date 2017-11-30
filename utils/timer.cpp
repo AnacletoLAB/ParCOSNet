@@ -1,3 +1,5 @@
+// COSnet - timer class
+// Alessandro Petrini, 2017
 #include "timer.h"
 
 Timer::Timer() {}

@@ -1,3 +1,5 @@
+// COSnet - timer class
+// Alessandro Petrini, 2017
 #pragma once
 #include <chrono>
 #include <iostream>
