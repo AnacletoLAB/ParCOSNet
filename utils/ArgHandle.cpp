@@ -4,7 +4,7 @@
 #include <getopt.h>
 
 ArgHandle::ArgHandle( int argc, char **argv ) :
-		dataFilename( "" ), foldFilename( "" ), labelFilename( "" ), outFilename( "" ), geneOutFilename( "" ), 
+		dataFilename( "" ), foldFilename( "" ), labelFilename( "" ), outFilename( "" ), geneOutFilename( "" ),
 		statesOutFilename( "" ), foldsOutFilename( "" ), timeOutFilename( "" ),
 		m( 0 ), n( 0 ), prob( 0.0 ),
 		nFolds( 0 ), seed( 0 ), verboseLevel(0),
@@ -16,7 +16,7 @@ ArgHandle::~ArgHandle() {}
 
 void ArgHandle::processCommandLine() {
 
-	char const *short_options = "d:l:f:m:n:s:N:o:g:u:j:S:q:t:v:h";
+	char const *short_options = "d:l:f:m:n:N:o:g:u:j:S:q:t:v:h";
 	const struct option long_options[] = {
 
 		{ "data",			required_argument, 0, 'd' },
@@ -24,7 +24,6 @@ void ArgHandle::processCommandLine() {
 		{ "folds",			required_argument, 0, 'f' },
 		{ "features",		required_argument, 0, 'm' },
 		{ "variables",		required_argument, 0, 'n' },
-		{ "simulate",		required_argument, 0, 's' },
 		{ "nFolds",			required_argument, 0, 'N' },
 		{ "out",			required_argument, 0, 'o' },
 		{ "geneOut",		required_argument, 0, 'g' },
@@ -241,7 +240,7 @@ void ArgHandle::processCommandLine() {
 	}
 
 	if (simulate & (nFolds == 0)) {
-		std::cout << "\033[33;1mNo number of folds specified. Using default setting: 3 (--nFolds).\033[0m" << std::endl;
+		std::cout << "\033[33;1mNo number of folds specified. Using default setting: 5 (--nFolds).\033[0m" << std::endl;
 		nFolds = 3;
 	}
 
@@ -269,36 +268,43 @@ void ArgHandle::processCommandLine() {
 
 
 void ArgHandle::displayHelp() {
-	std::cout << " **** CosNET-GPU ****" << std::endl;
-	std::cout << "( --- qui bisogna scrivere qualcosa tipo i nomi degli autori e una descrizione dell'applicazione --- )" << std::endl;
+	std::cout << " **** ParCosNET ****" << std::endl;
+	std::cout << "A sparse and GPU parallel implementation of COSNet for solving the AFP (automated function prediction) problem."<< std::endl;
+	std::cout << std::endl;
+	std::cout << "by Alessandro Petrini (1), Marco Notaro (1), Jessica Gliozzo (2), Paolo Perlasca (1), Marco Mesiti (1)," << std::endl;
+	std::cout << "Giorgio Valentini (1), Giuliano Grossi (1) and Marco Frasca (1)" << std::endl;
+	std::cout << "1: Università degli Studi di Milano - Dept. Computer Science" << std::endl;
+	std::cout << "2: Fondazione IRCCS Ca’ Granda - Ospedale Maggiore Policlinico, Università degli Studi di Milano";
+	std::cout << "Milano - 2017" << std::endl;
+	std::cout << std::endl;
 
 	std::cout << "Usage: " << std::endl;
 	std::cout << "    " << argv[0] << " [options]" << std::endl;
 	std::cout << std::endl;
 
 	std::cout << "Options:" << std::endl;
-	std::cout << "    " << "--help               Print this help." << std::endl;
-	std::cout << "    " << "--out file.txt       Output file. Is a space-separated value text file." << std::endl;
-	std::cout << "    " << "--label file.txt     Labelling input file. Must be a space-separated value text file." << std::endl;
-	std::cout << "    " << "                     Each 1 in the label file represent a minor class candidate, 0 otherwise." << std::endl;
-	std::cout << "    " << "                     Parameter 'n' is assigned by reading this file." << std::endl;
-	std::cout << "    " << "--data file.txt      Data matrix input file. Must be a space-separated value text file." << std::endl;
-	std::cout << "    " << "                     Data is read row wise, where each row is a feature and each column" << std::endl;
-	std::cout << "    " << "                     represents a sample." << std::endl;
-	std::cout << "    " << "--fold file.txt      Optional fold input file. Must be a space-separated value text file." << std::endl;
-	std::cout << "    " << "                     Folds in text file must be numbered from 0. If unspecified, random" << std::endl;
-	std::cout << "    " << "                     generation of fold is enabled." << std::endl;
-	std::cout << "    " << "--simulate P         Enable simulation of a random data / label / fold set. Positive examples are" << std::endl;
-	std::cout << "    " << "                     generated with probability P (0 < P < 1). -m and -n parameters are required." << std::endl;
-	std::cout << "    " << "-m M                 Number of features to be generated. Enabled only if --simulate option is specified." << std::endl;
-	std::cout << "    " << "-n N                 Number of samples to be generated. Enabled only if --simulate option is specified." << std::endl;
-	std::cout << "    " << "--nFolds N           Number of folds for cross validation [default = 3]. This option is disabled if" << std::endl;
-	std::cout << "    " << "                     a fold file is specified." << std::endl;
-	std::cout << "    " << "--nThrd              Number of threads" << std::endl;
-	std::cout << "    " << "--seed N             Seed for random number generator." << std::endl;
-	std::cout << "    " << "--verbose-level N    Level of verbosity: 0 = silent" << std::endl;
-	std::cout << "    " << "                                         1 = only progress" << std::endl;
-	std::cout << "    " << "                                         2 = rf and progress" << std::endl;
-	std::cout << "    " << "                                         3 = complete" << std::endl;
+	std::cout << "    " << "--help                Print this help." << std::endl;
+	std::cout << "    " << "--data file.txt       Network input file." << std::endl;
+	std::cout << "    " << "                      Each row in the file is a triplet 'sourceNode destinatioNode edgeWeight' representing" << std::endl;
+	std::cout << "    " << "                      an edge of the graph" << std::endl;
+	std::cout << "    " << "--label file.txt      Labelling input file in compressed format." << std::endl;
+	std::cout << "    " << "                      Each row in the file represents a candidate of the minority class, divided by class," << std::endl;
+	std::cout << "    " << "                      i.e. nodeA GO::00012" << std::endl;
+	std::cout << "    " << "--out file.txt        Output file." << std::endl;
+	std::cout << "    " << "--geneOut file.txt    Gene names output file." << std::endl;
+	std::cout << "    " << "--foldsOut file.txt   Optional fold output file." << std::endl;
+	std::cout << "    " << "--fstatesOut file.txt Optional node states output file." << std::endl;
+	// std::cout << "    " << "--simulate P          Enable simulation of a random data / label / fold set. Positive examples are" << std::endl;
+	// std::cout << "    " << "                      generated with probability P (0 < P < 1). -m and -n parameters are required." << std::endl;
+	// std::cout << "    " << "-m M                  Number of features to be generated. Enabled only if --simulate option is specified." << std::endl;
+	// std::cout << "    " << "-n N                  Number of samples to be generated. Enabled only if --simulate option is specified." << std::endl;
+	std::cout << "    " << "--nFolds N            Number of folds for cross validation [default = 5]." << std::endl;
+	std::cout << "    " << "--nThrd               Number of CPU threads" << std::endl;
+	std::cout << "    " << "--seed N              Seed for the random number generator." << std::endl;
+	// std::cout << "    " << "--verbose-level N     Level of verbosity: 0 = silent" << std::endl;
+	// std::cout << "    " << "                                         1 = only progress" << std::endl;
+	// std::cout << "    " << "                                         2 = rf and progress" << std::endl;
+	// std::cout << "    " << "                                         3 = complete" << std::endl;
+	std::cout << "    " << "--tttt fileout.txt    Optional file for collecting computation stats" << std::endl;
 	std::cout << std::endl << std::endl;
 }
