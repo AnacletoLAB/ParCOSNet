@@ -1,3 +1,5 @@
+// COSnet - Cuda Randomizer class
+// Alessandro Petrini - Giuliano Grossi, 2017
 #pragma once
 #ifdef WIN32
 #include <cuda.h>

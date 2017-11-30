@@ -1,3 +1,5 @@
+// COSnet - Cuda Stream class
+// Alessandro Petrini, 2017
 #pragma once
 
 #ifdef WIN32

@@ -1,3 +1,5 @@
+// COSnet - Cuda Stream class
+// Alessandro Petrini, 2017
 #ifdef WIN32
 #include <cuda.h>
 #include <cuda_runtime.h>

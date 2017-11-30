@@ -1,3 +1,5 @@
+// COSnet - Cuda utilities classes
+// Alessandro Petrini - Giuliano Grossi, 2017
 #pragma once
 #include <cuda.h>
 #include <cuda_runtime.h>

@@ -1,3 +1,5 @@
+// COSnet - Cuda Randomizer class
+// Alessandro Petrini - Giuliano Grossi, 2017
 #include "GPUutils.h"
 #include "GPURandomizer.h"
 

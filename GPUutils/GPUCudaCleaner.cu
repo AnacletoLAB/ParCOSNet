@@ -1,3 +1,5 @@
+// COSnet - Cuda Cleaner class
+// Alessandro Petrini, 2017
 #include <iostream>
 #include "GPUCudaCleaner.h"
 

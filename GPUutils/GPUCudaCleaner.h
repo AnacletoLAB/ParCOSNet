@@ -1,3 +1,5 @@
+// COSnet - Cuda Cleaner class
+// Alessandro Petrini, 2017
 #pragma once
 #include <iostream>
 
@@ -13,7 +15,7 @@
 // therefore invoking the cudaDeviceReset function
 // (this is not true if there are static objects, since their destruction and
 // construction order are compiler dependant: this CudaCleaner stuff would
-// certainly do fancy stuff in this case...) 
+// certainly do fancy stuff in this case...)
 
 class CudaCleaner {
 public:
