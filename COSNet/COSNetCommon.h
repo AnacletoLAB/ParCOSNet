@@ -1,3 +1,5 @@
+// COSnet - COSNet utilities class
+// Alessandro Petrini - Giuliano Grossi - Marco Frasca, 2017
 #pragma once
 #include <string>
 #include <iostream>

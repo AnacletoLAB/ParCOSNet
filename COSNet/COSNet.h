@@ -1,3 +1,5 @@
+// COSnet - COSNet class
+// Alessandro Petrini - Giuliano Grossi - Marco Frasca, 2017
 #pragma once
 #include <string>
 #include <iostream>
@@ -50,7 +52,7 @@ public:
 
 	float						*	threshold;			// Allocato da COSNet::train()
 
-	float						*	pos_neigh;			// Allocato da netP// TODO: rifare per supportare grafi non memorizzati in Unified Memoryrojection
+	float						*	pos_neigh;			// Allocato da netProjection
 	float						*	neg_neigh;			// Allocato da netProjection
 
 	GraphStruct<nodeW, edgeW>	*	str;

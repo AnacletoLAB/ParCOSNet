@@ -1,3 +1,5 @@
+// COSnet - COSNet utilities class
+// Alessandro Petrini - Giuliano Grossi - Marco Frasca, 2017
 #include <COSNet/COSNetCommon.h>
 
 // TODO: rifare per supportare grafi non memorizzati in Unified Memory

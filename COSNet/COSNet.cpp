@@ -1,3 +1,5 @@
+// COSnet - COSNet class
+// Alessandro Petrini - Giuliano Grossi - Marco Frasca, 2017
 #include "COSNet/COSNet.h"
 
 
@@ -392,8 +394,7 @@ void COSNet<nodeW, edgeW>::train( uint32_t currentFold ) {
 	const uint32_t foldSize = foldIndex[currentFold + 1] - foldIndex[currentFold];
 	const uint32_t * const foldLabels = &(folds[foldIndex[currentFold]]);
 
-	// Ma questo a che cacchio serviva?!?!?!
-	// Ah, ora ricordo: i nodi negativi hanno etichetta "-1", quelli positivi "+1"
+	// I nodi negativi hanno etichetta "-1", quelli positivi "+1"
 	// labelsPurged è un array delle etichette "di lavoro" in cui le etichette del
 	// fold corrente vengono messe a "0"; perciò, prima copio l'array labels e poi
 	// imposto a 0 le etichette corrispondenti ai nodi del fold
@@ -455,15 +456,6 @@ void COSNet<nodeW, edgeW>::train( uint32_t currentFold ) {
 			threshold[i] -= pesiDeiVicini[j] * newLabels[vicinato[j]];
 		}
 		threshold[i] += eta * a * ( 2.0f * b * (h - 1.0f) + (1.0f - 2.0f * trainPosProp * h) );
-
-		// e copia dentro al grafo
-		//str->nodeThreshold[unlabelledPositions[i]] = threshold[i];
-		// NOOOO!!!! Questo deve rimanere locale al thread!
-		// Non bisogna modificare il grafo, perché condiviso tra tutti i thread!!!!!
-		// Modificare l'array delle soglie, in modo che sia grande nNodes e vengano
-		// riempite le posizioni corrispondenti ai nodi non etichettati!
-		// La versione precedente di COSNet era corretta, poiché ogni thread manteneva
-		// una copia locale del grafo.
 	}
 }
 
@@ -488,8 +480,7 @@ void COSNet<nodeW, edgeW>::run( const edgeW * const sumOfWghs ) {
 	//HN_d.normalizeScore( str, reduxToFull, sumOfWghs );
 
 	HN_d.returnVal( stateRedux.get(), scoreRedux.get() );
-	//std::for_each( stateRedux.get(), stateRedux.get() + grafoRedux.getStruct()->nNodes, [](float nn) {std::cout << nn << " ";} );
-	//getchar();
+
 	for (uint32_t i = 0; i < grafoRedux.getStruct()->nNodes; i++) {
 		states[reduxToFull[i]] = stateRedux[i];
 		scores[reduxToFull[i]] = scoreRedux[i];
@@ -543,8 +534,7 @@ void COSNet<nodeW, edgeW>::runCPU() {
 	//HN_d.normalizeScore( str, &reduxToFull );
 
 	HN.returnVal( stateRedux.get(), scoreRedux.get() );
-	//std::for_each( stateRedux.get(), stateRedux.get() + grafoRedux.getStruct()->nNodes, [](float nn) {std::cout << nn << " ";} );
-	//getchar();
+
 	for (uint32_t i = 0; i < grafoRedux.getStruct()->nNodes; i++) {
 		states[reduxToFull[i]] = stateRedux[i];
 		scores[reduxToFull[i]] = scoreRedux[i];
