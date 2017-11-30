@@ -1,3 +1,5 @@
+// COSnet - Hopfield Net GPU class
+// Alessandro Petrini, 2017
 #ifdef WIN32
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -67,7 +69,6 @@ void HopfieldNetGPU<nodeW, edgeW>::run_nodewise() {
 	bool *modified_d;
 	cuSts = cudaMalloc( (void**) &modified_d, sizeof(bool) ); cudaCheck(cuSts,__FILE__,__LINE__);
 
-	//alloco e copio cumulSize
 	std::unique_ptr<uint32_t[]> ISsize_h( new uint32_t[col_d->nCol + 1] );
 	cuSts = cudaMemcpy( ISsize_h.get(), col_d->cumulSize, (col_d->nCol + 1) * sizeof( uint32_t ), cudaMemcpyDeviceToHost ); cudaCheck( cuSts, __FILE__, __LINE__ );
 
@@ -306,24 +307,24 @@ __global__ void HopfieldNetGPU_k::updateIS_edgewise( float * const state, float 
 	// DIM del blocco 1D, serve per il calcolo dello score edgewise
 	// serve per segmentare il calcolo/quanti edge associo ad un thread
 	// nel caso il numero di vicini del nodo corrente superi blockDim
-	unsigned int dim = blockDim.x;		 // "larghezza" thread:
+	unsigned int dim = blockDim.x;
 
 	// color idx supera numero colori?
 	if (colorIdx >= nCol)
 		return;
 
-	const int 		offsetCol = cumulSize[colorIdx];						// offset per il coloring
+	const int 		offsetCol = cumulSize[colorIdx];
 
 	// il kernel non deve prendere nodi nodeIdx al di fuori del colore attuale
 	if( (offsetCol + bid) >= cumulSize[colorIdx + 1] )
 		return;
 
-	const int 		nodeIdx = colClass[offsetCol + bid];					// indice del nodo in cui lavoreremo
+	const int 		nodeIdx = colClass[offsetCol + bid];
 
-	extern __shared__ float smem[];		 // fissata (per ora) al lancio del kernel come 32 * sizeof(float)
+	extern __shared__ float smem[];
 
-	const int 		offsetDeg	= cumulDegs[nodeIdx];				// offset per neighs di nodeIdx
-	const int 		degree = cumulDegs[nodeIdx+1] - offsetDeg;		// per il ciclo
+	const int 		offsetDeg	= cumulDegs[nodeIdx];
+	const int 		degree = cumulDegs[nodeIdx+1] - offsetDeg;
 
 	// Indica il numero di vicini che ogni thread deve cuccarsi
 	// es. se numero vicini = 146 e numero thread per blocco = 32 =>
@@ -446,14 +447,11 @@ void HopfieldNetGPU<nodeW, edgeW>::clearInitState() {
 }
 
 // GPURandomizer riempie casualmente state e score su memoria device
-// serve ancora?
 template<typename nodeW, typename edgeW>
 void HopfieldNetGPU<nodeW, edgeW>::setRandomInitState( GPURand * const randomizer ) {
 	//randomizer->fillRandom( hState_d.state, hState_d.size );
 }
 
-// vecchia versione?
-// serve ancora?
 template<typename nodeW, typename edgeW>
 void HopfieldNetGPU<nodeW, edgeW>::setInitStateProb( Prob p, char type ) {
 	cudaError_t cuSts;
@@ -601,18 +599,17 @@ void HopfieldNetGPU<nodeW, edgeW>::normalizeScore( const GraphStruct<nodeW, edge
 }
 
 
-__global__ void HopfieldNetGPU_k::accumulateScores2( const uint32_t unlab, const unitVal * const scores, unitVal * const accumScores ) {
-	//uint32_t tid = blockDim.x * blockIdx.x + threadIdx.x;
-	uint32_t baseBlock = blockDim.x * blockIdx.x;
-
-	accumScores[blockIdx.x] = 0.0f;
-	if (threadIdx.x==0) {
-		for(uint32_t i = 0; i < blockDim.x; i++) {
-			if (baseBlock + i < unlab)
-				accumScores[blockIdx.x] += fabsf( scores[baseBlock + i] );
-		}
-	}
-}
+// __global__ void HopfieldNetGPU_k::accumulateScores2( const uint32_t unlab, const unitVal * const scores, unitVal * const accumScores ) {
+// 	uint32_t baseBlock = blockDim.x * blockIdx.x;
+//
+// 	accumScores[blockIdx.x] = 0.0f;
+// 	if (threadIdx.x==0) {
+// 		for(uint32_t i = 0; i < blockDim.x; i++) {
+// 			if (baseBlock + i < unlab)
+// 				accumScores[blockIdx.x] += fabsf( scores[baseBlock + i] );
+// 		}
+// 	}
+// }
 
 __global__ void HopfieldNetGPU_k::accumulateScores( const uint32_t unlab, const unitVal * const scores, unitVal * const accumScores ) {
 
@@ -629,7 +626,6 @@ __global__ void HopfieldNetGPU_k::accumulateScores( const uint32_t unlab, const 
 	tempScores[threadIdx.x] += fabsf(scores[baseBlock + threadIdx.x + incremento]);
 	__syncthreads();
 
-	// ahah! Non capisco un cazzo!
 #pragma unroll
 	for (uint32_t i = blockDim.x / 2; i > 0; i >>= 1) {
 		if ((threadIdx.x < i) & (tid + i < unlab / 2)){
@@ -657,9 +653,7 @@ __global__ void HopfieldNetGPU_k::normalizeScores( const uint32_t unlab, const f
 	uint32_t tid = blockDim.x * blockIdx.x + threadIdx.x;
 	if (tid >= unlab)
 		return;
-	//unitVal ttt = scores[tid];
 	scores[tid] = sumOfWeights[indexes[tid]] / accumWDeg + scores[tid] / accumScores;
-	//if (tid==0) printf("Prima: %f, Dopo: %f\n", ttt, scores[tid]);
 
 	return;
 }

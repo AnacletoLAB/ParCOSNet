@@ -1,3 +1,5 @@
+// COSnet - HopfieldNet CPU class
+// Alessandro Petrini, 2017
 #include <iostream>
 #include <algorithm>
 #include <math.h>
@@ -57,28 +59,8 @@ float HopfieldNet<nodeW, edgeW>::getEnergy() {
 	}
 
 	return E;
-
-/*
-		float E = 0;
-	for (int i = 0; i < graph->nUnit; i++) {
-		E += graph->threshold[i] * hState.state[i];
-		for (int j = 0; j < graph->deg[i]; j++)
-			if (hState.state[i] && hState.state[graph->neigh[i][j]])
-				E -= 0.5*graph->weight[i][j];
-	}
-	return E;*/
 }
 
-
-/*
-#	#	#	#	#	#	#	#	#	#	#	#	#
-
-			HopfieldNetCPU CLASS
-
-#	#	#	#	#	#	#	#	#	#	#	#	#
-*/
-
-// Costruttore per la rete di Hopfield sequenziale su CPU
 template<typename nodeW, typename edgeW>
 HopfieldNetCPU<nodeW, edgeW>::HopfieldNetCPU( const Graph<nodeW, edgeW> * const inGraph,
 	 float inPosState, float inNegState, float inRegulWeight ) :
@@ -95,12 +77,6 @@ HopfieldNetCPU<nodeW, edgeW>::~HopfieldNetCPU() {
 
 template<typename nodeW, typename edgeW>
 void HopfieldNetCPU<nodeW, edgeW>::run() {
-	//std::cout << " run " << std::endl;
-
-	/*if (!graph->connected) {
-		cout << "Warning: graph non connected... EXIT!\n";
-		return;
-	}*/
 
 	this->numIter = 0;
 	bool modified = true;
@@ -154,8 +130,6 @@ void HopfieldNetCPU<nodeW, edgeW>::run() {
 			break;
 		}
 	}
-
-	//stableState = "-?-";
 }
 
 template<typename nodeW, typename edgeW>

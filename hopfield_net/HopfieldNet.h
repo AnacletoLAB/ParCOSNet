@@ -1,3 +1,5 @@
+// COSnet - Hopfield Net class
+// Alessandro Petrini, 2017
 #pragma once
 
 #include "graph/graph.h"
@@ -35,13 +37,6 @@ public:
 
 	int				getNumIter() const;
 	float			getEnergy();
-/*
-	HopfState	*	getState() const;
-	void			permRunOrder();
-	void			permRunColorOrder();
-	void			checkStableState();
-	string			isStableState() const;
-	void			display();*/
 
 protected:
 	const Graph<nodeW, edgeW> 			* const graph;
@@ -55,7 +50,7 @@ protected:
 
 	string								stableState{};
 	int							*		unitUpdateOrder{};
-	int							*		colUpdateOrder{};		// Uh oh... questo dove viene allocato?
+	int							*		colUpdateOrder{};
 	int									numIter{0};
 };
 
@@ -123,8 +118,8 @@ namespace HopfieldNetGPU_k {
 
 	__global__ void accumulateScores( const uint32_t unlab, const unitVal * const scores,
 			unitVal * const accumScores );
-	__global__ void accumulateScores2( const uint32_t unlab, const unitVal * const scores,
-			unitVal * const accumScores );
+	// __global__ void accumulateScores2( const uint32_t unlab, const unitVal * const scores,
+	// 		unitVal * const accumScores );
 	__global__ void normalizeScores( const uint32_t unlab, const float accumWDeg, const unitVal accumScores,
 			const unitVal * const sumOfWeights, const uint32_t * const indexes, unitVal * const scores );
 }
