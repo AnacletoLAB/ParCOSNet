@@ -1,5 +1,5 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(HopfieldNetFuma)
+PROJECT(ParCOSNet)
 include_directories(.)
 include_directories(COSNet)
 include_directories(GPUutils)
@@ -10,15 +10,6 @@ include_directories(utils)
 
 INCLUDE(FindCUDA)
 
-FIND_PACKAGE( OpenMP REQUIRED)
-if(OPENMP_FOUND)
-message("OPENMP FOUND")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-endif()
-
-#SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; --compiler-options -fno-strict-aliasing -lineinfo -use_fast_math -Xptxas -dlcm=cg)
 SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_60,code=sm_60;)
 SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_52,code=sm_52;)
 SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -gencode arch=compute_35,code=sm_35;)
@@ -29,7 +20,6 @@ SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -default-stream per-thread;)
 #SET(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -std=c++11; -O0; -G; -Xcompiler -rdynamic; -keep; -Xcompiler -fPIC; -Xcompiler -fopenmp;)
 
 SET(CUDA_SEPARABLE_COMPILATION TRUE) # -rdc true
-
 SET(CUDA_PROPAGATE_HOST_FLAGS OFF)
 SET(CUDA_NON_PROPAGATED_HOST_FLAGS ON)
 
@@ -58,15 +48,10 @@ SET(SOURCESCUDA     "GPUutils/GPUCudaCleaner.cu"
                 	"graph_coloring/coloringLuby.cu"
 					"graph_coloring/coloringLubyFast.cu"
 					"hopfield_net/HopfieldNetGPU.cu"
-#					"testColoring_Benchmark.cu")
-#					"testCOSNet.cu")	# versione openmp
-					"testCOSNetMT.cu")	# versione std::thread
+					"ParCOSNet.cu")
 SET(SOURCEGEN		"datasetGenerator.cpp")
 
-CUDA_ADD_EXECUTABLE(COSNet ${SOURCESCUDA} ${SOURCESCPP})
+CUDA_ADD_EXECUTABLE(ParCOSNet ${SOURCESCUDA} ${SOURCESCPP})
 add_executable(datasetGen ${SOURCEGEN})
 
-target_link_libraries(COSNet    ${CUDA_LIBRARIES} "/usr/local/cuda/lib64/libcudadevrt.a" ${CUDA_curand_LIBRARY})
-
-# ssh apetrini@login.pico.cineca.it
-# qsub -A LI08s_HPCSoMuC -I -l select=1:ncpus=2:mpiprocs=2 -q bigmem -- /bin/bash
+target_link_libraries(ParCOSNet    ${CUDA_LIBRARIES} "/usr/local/cuda/lib64/libcudadevrt.a" ${CUDA_curand_LIBRARY})
